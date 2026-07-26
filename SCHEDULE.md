@@ -7,6 +7,13 @@
 
 관련 문서: 제품 정의는 [PRD.md](PRD.md) 참조
 
+**산출물**
+
+| 문서 | 용도 |
+|---|---|
+| [docs/기획서.md](docs/기획서.md) | 첨부1 제출 양식 |
+| [docs/user-research.md](docs/user-research.md) | 페르소나·사용자 여정 |
+
 ---
 
 ## 담당자
