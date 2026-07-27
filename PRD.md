@@ -1,4 +1,10 @@
-돈워리 PRD v1.0
+# 돈워리 PRD v1.1
+
+> 기술 구현 기준: [인프라 아키텍처](docs/infrastructure-architecture.md) · [개발 스택](docs/development-stack.md) · [위험 정책](docs/risk-spec.md)
+>
+> 사용자·화면 기준: [사용자 조사](docs/user-research.md) · [알림 정책](docs/alert-policy.md) · [화면 IA](docs/ia.md)
+>
+> v1.1에서는 1인 개발·6주 완주를 위해 보호 대상자 무계정 활성화, NestJS 모듈형 모놀리스, PostgreSQL outbox, 브라우저 격리 데모를 구현 기준으로 확정했습니다.
 
 프로젝트 유형: Android 기반 금융사기 예방 앱 + 보호자용 웹서비스
 대회: 2026 금융 AI Challenge
@@ -73,12 +79,12 @@ Android 앱은 실제 기기 데모와 서비스의 차별성을 보여주지만
 Android 배포	심사용 APK 직접 설치
 Google Play 출시	MVP 범위 제외
 지원 OS	Android 10 이상
-문자 자동 감지	NotificationListenerService 우선
+문자 자동 감지	Phase 0 실기기 gate 통과 시 조건부 P0
 문자 수동 검사	공유하기·복사 붙여넣기 지원
-전화 감지	CallScreeningService
+전화 감지	Phase 0 실기기 gate 통과 시 조건부 P0, 수동 번호 검사는 core P0
 통화 음성 분석	제외
-보호자 알림	FCM 및 웹 대시보드
-AI 모델	규칙 + URL 평판 + 경량 분류 + LLM 설명
+보호자 알림	FCM Web Push 및 웹 대시보드
+AI 모델	결정적 규칙 + URL 평판 + 연관·행동 신호 + LLM 설명
 자체 LLM 학습	제외
 유료 민간 데이터	선택적 보조 기능
 핵심 데이터	무료 공개 데이터와 자체 합성 데이터
@@ -233,7 +239,7 @@ URL 검사 결과
 6. 통화 후 위험 행동 설문
 7. 송금·앱 설치 요구가 확인되면 CRITICAL 판정
 8. 보호자 알림
-9. 30분 송금주의 보호 모드
+9. 현재 사건의 위험 경고와 대응 상태 유지
 10. 공식기관 대표번호 재확인
 7.3 피해 발생 여정
 1. 사용자가 “이미 송금함” 선택
@@ -245,29 +251,41 @@ URL 검사 결과
 7. 조치 완료 상태 기록
 8. 기능 요구사항
 8.1 P0 — 제출 필수 기능
+
+P0는 다음처럼 구분합니다.
+
+- **Core P0**: 공유·붙여넣기 문자 분석, 수동 번호 확인, 로컬 경고, 대상자 1명–보호자 1명 연결, MINIMAL/BASIC 공유, 사건·체크리스트, 보호자 웹·푸시, 공개 합성 데모
+- **Gated P0**: Notification Listener 자동 감지와 Call Screening 자동 전화 감지는 `docs/android-spike.md` gate를 8시간 안에 통과한 기능만 포함
+- gate를 통과하지 못한 자동 감지 기능은 P1 또는 실험 기능으로 이동하며 core P0 완료를 막지 않음
 FR-001 계정 및 인증
 항목	요구사항
-인증	이메일 또는 간편 로그인
-사용자 유형	보호 대상자, 보호자
-세션	Access/Refresh Token
-탈퇴	개인정보와 사건 데이터 삭제
+보호자 인증	이메일 또는 간편 로그인(Firebase Authentication)
+보호 대상자 인증	로그인 계정 없음. 보호자가 생성한 10분 만료 6자리 코드로 기기 활성화
+보호자 세션	Firebase ID token 검증
+대상자 기기	활성화 후 회전 가능한 기기 전용 자격 증명
+탈퇴	Primary DB의 개인정보와 사건 데이터 즉시 삭제
 데모	심사위원용 로그인 없는 샘플 모드
 완료 조건
-사용자가 가입하고 역할을 선택할 수 있다.
+보호자가 로그인하고 대상자 프로필을 만든 뒤 대상자 Android에서 연결·공유·자동 알림 동의를 승인할 수 있다.
+활성화는 코드 preview와 최종 승인으로 나누며, 선택적 자동 알림을 거부해도 연결과 로컬 보호 기능은 활성화된다.
 웹 데모는 개인정보 없이 체험할 수 있다.
 FR-002 보호자 연결
 항목	요구사항
 초대 방식	6자리 코드 또는 링크
 동의	보호 대상자가 연결을 승인
-다중 보호자	최대 3명
+다중 보호자	P0는 대상자당 1명. P1에서 최대 3명
 권한	이벤트 요약 보기, 상세 보기, 연락
 해제	양측 모두 연결 해제 가능
 공유 수준
 수준	공유 데이터
 최소	위험도, 유형, 시각
 기본	마스킹된 번호·행동 상태
-확장	사용자 승인 후 문자 원문
+확장	P1. 사건별 승인 후 15분·1회 문자 원문
 금지	통화 음성, 연락처 전체, 계좌정보
+
+P1의 두 번째·세 번째 보호자는 대상자 Android가 발급한 10분 코드를 로그인한 보호자가 claim하고, 대상자가 기기에서 해당 보호자의 요약·공유·알림 범위를 다시 승인한 뒤 연결합니다.
+
+자동 알림은 연결별로 대상자가 승인한 `NONE`, `HIGH`, `CRITICAL` 임계값과 보호자의 `REQUEST_ONLY`, `HIGH`, `CRITICAL` 수신 임계값 중 더 제한적인 수준을 적용합니다. 보호자 설정은 대상자 동의 범위를 넓힐 수 없습니다.
 FR-003 문자 입력
 
 MVP는 다음 세 경로를 지원합니다.
@@ -362,7 +380,7 @@ FR-008 보호자 위험 알림
 
 고위험 사건 발생 시 NestJS가 FCM으로 보호자에게 알림을 보냅니다.
 
-FCM은 Android와 웹 등 여러 플랫폼에 메시지를 전달할 수 있으며, Android에서는 FirebaseMessagingService를 통해 데이터 메시지를 처리할 수 있습니다.
+MVP에서 FCM 수신자는 보호자 웹입니다. 보호 대상자 Android의 즉시 경고는 네트워크에 의존하지 않는 로컬 고우선순위 알림으로 표시합니다.
 
 알림 예시
 김영희 어르신에게 위험 전화가 감지되었습니다.
@@ -422,10 +440,11 @@ FR-012 심사위원 웹 데모
 정상 병원 전화	정상 전화 경고 최소화
 피해 발생	지급정지 대응 흐름
 
-웹에서 각 분석 단계와 API 결과를 확인할 수 있어야 합니다.
+웹에서 각 분석 단계와 판정 결과를 확인할 수 있어야 합니다. 공개 데모는 합성 fixture와 공통 RiskEngine을 브라우저에서 실행하며 운영 API·DB·FCM을 호출하지 않습니다.
 
 8.2 P1 — 본선 진출 경쟁력 기능
-문자와 전화의 시간순 연관 분석
+두 번째·세 번째 보호자 연결
+EXTENDED 사건별 원문 15분·1회 공유
 위험 전화 후 30분 보호 모드
 보호자 실시간 사건 타임라인
 공식기관 대표번호 비교
@@ -451,12 +470,14 @@ LLM이 원문을 보고 임의로 최종 위험도를 결정하지 않습니다.
 
 정확 일치 데이터
 → 규칙 엔진
-→ 텍스트 분류
 → URL 평판
 → 문맥 연결
+→ 행동 신호
 → 종합 점수
 → LLM 설명 생성
 → 안전 필터
+
+P0에는 별도 경량 분류 API를 두지 않습니다. 라벨 데이터 평가에서 규칙·평판·연관 분석보다 실질적인 개선이 확인될 때만 P1 이후에 추가합니다.
 9.2 위험 점수 모델
 
 초기 MVP 가중치입니다.
@@ -495,7 +516,7 @@ KISA·Web Risk 악성 URL 일치	35
     "보호자에게 확인 요청을 보내세요."
   ],
   "confidence": 0.87,
-  "requiresFamilyAlert": true
+  "requiresGuardianAlert": true
 }
 9.4 LLM 역할
 
@@ -578,41 +599,40 @@ URL 단축
 │ Notification Listener        │
 │ Call Screening Service       │
 │ Local Rule Engine            │
-│ Room                         │
-│ FCM                          │
+│ Room + WorkManager           │
+│ Local Warning               │
 └──────────────┬───────────────┘
                │ HTTPS
                ▼
 ┌──────────────────────────────┐
 │ NestJS API                   │
-│ Fastify + Prisma            │
+│ Express + Prisma            │
 │                              │
-│ Authentication               │
-│ Family                       │
+│ Guardian / Subject / Device  │
+│ Care Connection / Consent    │
 │ Risk Analysis                │
 │ Reputation Adapter           │
 │ Incident                     │
-│ Notification                 │
-│ Feedback                     │
+│ PostgreSQL Outbox Worker     │
 └───────┬───────────┬──────────┘
         │           │
         ▼           ▼
- PostgreSQL        Redis
-        │           │
-        └─────┬─────┘
-              ▼
-       BullMQ Workers
-              │
-        ┌─────┴─────────────┐
-        ▼                   ▼
- KISA Local DB       Safe Browsing
- Web Risk Adapter     LLM Explanation
-              │
-              ▼
+ PostgreSQL    FCM Web Push
+        │
+        ├──────────► KISA Snapshot
+        ├──────────► Safe Browsing
+        └──────────► LLM Explanation
+
 ┌──────────────────────────────┐
 │ 보호자·심사위원 웹서비스    │
 │ Next.js                     │
+│                              │
+│ 보호자: API + FCM Web Push  │
+│ 데모: fixture + RiskEngine  │
 └──────────────────────────────┘
+
+공개 데모는 운영 데이터베이스와 FCM을 사용하지 않고 브라우저 `sessionStorage`, 불변 fixture와 공통 `packages/risk-engine`만 사용합니다.
+
 11.1 권장 기술 스택
 영역	기술
 Android	Kotlin, Jetpack Compose
@@ -622,97 +642,93 @@ Android 통신	Retrofit
 백그라운드	WorkManager
 전화	CallScreeningService
 문자 MVP	NotificationListenerService
-Push	Firebase Cloud Messaging
+보호자 Push	Firebase Cloud Messaging Web Push
 웹	Next.js
-백엔드	NestJS + Fastify
+백엔드	NestJS + Express
 DB	PostgreSQL + Prisma
-캐시	Redis
-Queue	BullMQ
+비동기 재시도	PostgreSQL outbox + NestJS scheduler
 배포	Docker
-관찰성	OpenTelemetry 또는 Sentry
-AI	경량 분류 API + LLM API
+관찰성	Sentry + 구조화 로그 + health check
+AI	결정적 RiskEngine + 선택적 LLM 설명 adapter
 URL 검사	KISA DB + Safe Browsing
 12. 백엔드 모듈 설계
-src/
+apps/api/src/
 ├── auth/
-├── users/
-├── families/
+├── guardians/
+├── subjects/
+├── care-connections/
 ├── devices/
 ├── consents/
-├── messages/
-├── calls/
+├── risk-events/
 ├── risk-analysis/
-│   ├── rules/
-│   ├── classifiers/
-│   ├── scorers/
-│   └── explainers/
-├── url-reputation/
+│   ├── correlation/
+│   └── explanation/
+├── reputation/
 │   ├── kisa/
 │   ├── safe-browsing/
-│   └── web-risk/
-├── phone-reputation/
+│   └── phone/
 ├── incidents/
-├── action-plans/
+├── action-items/
 ├── notifications/
-├── feedback/
-├── datasets/
 ├── evaluation/
-└── admin/
+└── health/
+
+결정적 점수·강제 규칙은 API와 웹 데모가 함께 사용하는 `packages/risk-engine`에 둡니다.
+
 13. 데이터 모델
 13.1 핵심 엔티티
-User
-FamilyConnection
+GuardianAccount
+SubjectProfile
+CareConnection
 Device
 Consent
 RiskEvent
-MessageArtifact
-CallArtifact
 RiskSignal
 Incident
 ActionItem
+NotificationOutbox
 NotificationDelivery
-Feedback
-DatasetSource
-ModelVersion
-EvaluationRun
+AuditLog
+
 13.2 주요 관계
-User ──< Device
-User ──< FamilyConnection >── User
-User ──< Consent
-User ──< RiskEvent
+GuardianAccount ──< CareConnection >── SubjectProfile
+SubjectProfile ──< Device
+SubjectProfile ──< Consent
+SubjectProfile ──< RiskEvent
 RiskEvent ──< RiskSignal
+RiskEvent ──< RawShareGrant (P1)
 RiskEvent ──> Incident
 Incident ──< ActionItem
-RiskEvent ──< NotificationDelivery
-RiskEvent ──< Feedback
+Incident ──< NotificationOutbox ──< NotificationDelivery
+
 13.3 주요 테이블
 risk_events
 컬럼	설명
 id	이벤트 ID
-user_id	보호 대상자
+subject_id	보호 대상자
 device_id	감지 기기
 type	SMS, CALL, URL, MANUAL
 risk_level	SAFE~UNKNOWN
 risk_score	0~100
 category	사기 유형
 occurred_at	감지 시각
-raw_content_retained	원문 저장 여부
-model_version	분석 버전
-status	OPEN, RESOLVED, ESCALATED
+policy_version	분석 정책 버전
+analysis_status	RECEIVED~FINALIZED_PARTIAL
 risk_signals
 컬럼	설명
 event_id	위험 이벤트
 signal_type	위험 특징
 score	기여 점수
 evidence	판단 근거
-source	KISA, RULE, MODEL 등
-family_connections
+source	KISA, RULE, REPUTATION 등
+care_connections
 컬럼	설명
-subject_user_id	보호 대상자
-guardian_user_id	보호자
+subject_id	보호 대상자
+guardian_id	보호자
 status	PENDING, ACTIVE, REVOKED
-share_level	MINIMAL, BASIC, EXTENDED
-alert_threshold	HIGH 또는 CRITICAL
+share_level	P0 MINIMAL/BASIC, P1 EXTENDED
+subject_auto_alert_threshold	NONE, HIGH, CRITICAL
+guardian_receive_threshold	REQUEST_ONLY, HIGH, CRITICAL
 incidents
 컬럼	설명
 stage	S0~S4
@@ -720,44 +736,56 @@ event_id	시작 이벤트
 user_reported_loss	피해 여부
 current_status	대응 상태
 summary	사건 경위
+raw_share_grants (P1)
+컬럼	설명
+id	사건별 원문 공유 승인 ID
+event_id	대상 위험 이벤트
+connection_id	승인된 보호자 연결
+ciphertext	애플리케이션 계층 암호화 원문
+expires_at	생성 후 최대 15분
+consumed_at	보호자 1회 조회 시각
 14. API 명세
 인증
-POST /auth/register
-POST /auth/login
-POST /auth/refresh
-DELETE /users/me
+POST   /v1/auth/guardian/session
+DELETE /v1/guardians/me
 보호자 연결
-POST   /families/invitations
-POST   /families/invitations/:code/accept
-GET    /families
-PATCH  /families/:id/permissions
-DELETE /families/:id
+POST   /v1/subjects
+POST   /v1/subjects/:id/activation-codes
+POST   /v1/devices/activation-previews
+POST   /v1/devices/activate
+DELETE /v1/devices/activation-sessions/:id
+DELETE /v1/subjects/me
+GET    /v1/care-connections
+PATCH  /v1/care-connections/:id/subject-settings
+PATCH  /v1/care-connections/:id/guardian-settings
+DELETE /v1/care-connections/:id
+GET    /v1/devices/me/consents
+PUT    /v1/devices/me/consents/:type
 위험 분석
-POST /risk/analyze-message
-POST /risk/analyze-url
-POST /risk/analyze-call
-GET  /risk-events/:id
-GET  /risk-events
+POST /v1/risk-events
+GET  /v1/risk-events/:id
+GET  /v1/risk-events
 Android 이벤트
-POST /devices/register
-POST /devices/fcm-token
-POST /events/message-notification
-POST /events/incoming-call
-POST /events/post-call-survey
+GET  /v1/risk-policies/current
+POST /v1/risk-events/:id/post-call-survey
 사건 관리
-POST  /incidents
-GET   /incidents/:id
-PATCH /incidents/:id/stage
-GET   /incidents/:id/action-items
-PATCH /action-items/:id
-피드백
-POST /risk-events/:id/feedback
-GET  /admin/feedback
-PATCH /admin/feedback/:id/review
-데모
-GET  /demo/scenarios
-POST /demo/scenarios/:id/run
-GET  /demo/sessions/:id
+POST  /v1/incidents
+GET   /v1/incidents/:id
+PATCH /v1/incidents/:id/stage
+PATCH /v1/incidents/:id/status
+GET   /v1/incidents/:id/action-items
+PATCH /v1/action-items/:id
+P1 예약
+POST   /v1/devices/me/guardian-invitation-codes
+POST   /v1/care-connection-claims
+GET    /v1/devices/me/pending-care-connections
+POST   /v1/care-connections/:id/approve
+POST /v1/risk-events/:id/raw-share-grants
+GET  /v1/raw-share-grants/:id
+DELETE /v1/raw-share-grants/:id
+
+공개 데모는 운영 API endpoint를 사용하지 않습니다. 실제 요청·응답 schema의 최종 기준은 NestJS에서 생성한 OpenAPI이며, 인증·멱등성·오류 계약은 `docs/backend-spec.md`를 따릅니다.
+
 15. 비동기 처리
 
 URL 외부 조회와 보호자 알림은 비동기로 처리합니다.
@@ -765,33 +793,42 @@ URL 외부 조회와 보호자 알림은 비동기로 처리합니다.
 위험 이벤트 접수
 → 1차 규칙 분석
 → 즉시 임시 결과 반환
-→ BullMQ에 외부 조회 등록
-→ Safe Browsing·번호 DB 확인
+→ 제한 시간 내 Safe Browsing·번호 DB 확인
 → 최종 위험도 갱신
-→ HIGH 이상이면 FCM 발송
-작업 상태
+→ 알림 정책이 요구하면 동일 transaction에 outbox 생성
+→ NestJS scheduled worker가 FCM Web Push 전송
+위험 분석 상태
 RECEIVED
 → LOCAL_ANALYZED
 → REPUTATION_CHECKING
-→ FINALIZED
-→ NOTIFIED
+→ FINALIZED 또는 FINALIZED_PARTIAL
+
+알림 전달 상태는 위험 분석 상태와 섞지 않고 `NotificationOutbox`에 별도로 둡니다.
+
+PENDING
+→ PROCESSING
+→ SENT
+또는 일시 오류 시 PENDING 재예약
+또는 영구·최대 재시도 실패 시 FAILED
+또는 동의·연결 철회 시 CANCELLED
 16. 개인정보 및 보안
 16.1 최소수집 원칙
 데이터	기본 처리
 문자 원문	기기 분석 후 기본 미저장
 URL	서버 조회 후 해시·도메인 저장
-전화번호	암호화 및 화면 마스킹
+전화번호	평판 조회 후 원번호 폐기, 서버 HMAC hash 및 화면용 마스킹 저장
 통화 음성	수집하지 않음
 연락처 목록	서버 전송하지 않음
 계좌번호	탐지 시 마스킹
-FCM 토큰	암호화 저장
+웹 푸시 토큰	암호화 저장
 보호자 연결	사용자 명시 동의
 16.2 데이터 보존
 데이터	보존기간
-미가입 데모 세션	24시간
+브라우저 데모 상태	sessionStorage 종료 또는 최대 24시간
 일반 위험 이벤트	30일
 사용자가 보존한 사건	사용자 삭제 시까지
-문자 원문 옵트인	최대 7일
+문자 원문 서버 분석 옵트인	요청 메모리에서 처리 후 폐기
+문자 원문 보호자 공유	P1. 사건별 승인 후 암호화, 15분 또는 첫 조회 중 빠른 시점에 삭제
 평가 로그	비식별 상태로 90일
 탈퇴 사용자	즉시 삭제 요청 처리
 16.3 동의 항목 분리
@@ -799,14 +836,14 @@ FCM 토큰	암호화 저장
 전화 스크리닝 동의
 보호자 알림 동의
 문자 원문 서버 분석 동의
-문자 원문 보호자 공유 동의
+문자 원문 보호자 공유 동의(P1)
 모델 개선 데이터 사용 동의
 16.4 위협 모델
 위협	대응
 정상 번호 대량 허위 신고	계정 신뢰도·관리자 검수
 악성 사용자의 데이터 오염	자동학습 금지
 API 키 탈취	백엔드 프록시·Secret 관리
-FCM 토큰 탈취	사용자·기기 바인딩
+웹 푸시 토큰 탈취	보호자 계정·브라우저 구독 바인딩
 보호자 계정 탈취	재인증과 연결 해제 알림
 문자 프롬프트 인젝션	문자를 명령이 아닌 데이터로 취급
 URL 리디렉션 공격	격리된 서버에서 제한적 추적
@@ -845,7 +882,7 @@ URL 리디렉션 공격	격리된 서버에서 제한적 추적
 전문용어 대신 행동 문장
 경고 화면에 보호자에게 전화 고정
 색상 외 아이콘·텍스트 병행
-음성 읽기 제공
+TalkBack 레이블·읽기 순서 제공(별도 음성 읽기 기능은 P1)
 뒤로 가기로 즉시 위험 안내가 사라지지 않게 함
 18. 성공 지표
 18.1 제품 지표
@@ -905,18 +942,18 @@ URL 없는 송금 유도
 환경	목적
 Samsung 실기기 Android 14 이상	주 데모
 Android 10 에뮬레이터	최소 지원 확인
-Android 15 에뮬레이터	알림 제한 확인
+Android 16 에뮬레이터	최신 호환성·알림 제한 확인
 Chrome Desktop	심사위원 웹
 모바일 Chrome	보호자 웹
 20. 예외 상황
 상황	처리
 알림 본문이 잘림	수동 공유 안내
 URL이 없음	문자 문맥만 분석
-외부 API 장애	캐시·규칙 결과 우선
+외부 API 장애	마지막 정상 snapshot·규칙 결과 우선
 네트워크 없음	로컬 분석 결과 제공
 번호 데이터 없음	UNKNOWN 표시
 보호자가 FCM을 받지 못함	웹 이벤트 보관
-사용자가 경고를 무시함	보호 모드 알림 유지
+사용자가 경고를 무시함	현재 사건 경고·보호자 알림 정책 유지
 정상 번호 오탐	피드백·예외 등록
 개인정보 포함 문자	서버 전송 전 마스킹
 한 문자에 여러 URL	URL별 분석 후 최고 위험 적용
@@ -930,7 +967,7 @@ Monorepo 또는 저장소 구성
 NestJS·Next.js·Android 초기화
 인증 및 사용자 모델
 보호자 연결 모델
-PostgreSQL·Redis 배포
+PostgreSQL·outbox·OpenAPI 구성
 기본 CI/CD
 디자인·기획
 페르소나
@@ -939,8 +976,8 @@ PostgreSQL·Redis 배포
 Figma 저충실도 와이어프레임
 정상·위험 시나리오 30건 작성
 완료 기준
-회원가입
-→ 보호자 연결
+보호자 로그인
+→ 대상자 생성·기기 활성화·동의
 → 웹 로그인
 2주차 — 문자·URL 분석
 개발
@@ -980,12 +1017,12 @@ FCM
 통화 후 설문
 피해 단계
 대응 체크리스트
-30분 보호 모드
 사건 요약
+알림 outbox 재시도
 디자인·기획
 단계별 대응 콘텐츠
 고령자 UX 개선
-음성 읽기 흐름
+권한 거부·오류·빈 상태 UX
 기능명세서 초안
 완료 기준
 위험 통화
@@ -1081,7 +1118,7 @@ URL 위험 분석 가능
 수신 전화번호 이벤트 처리 가능
 위험 근거 표시 가능
 보호자 확인 요청 가능
-FCM 수신 가능
+로컬 위험 알림 표시 가능
 통화 후 설문 가능
 피해 단계별 체크리스트 제공
 웹
@@ -1097,7 +1134,7 @@ FCM 수신 가능
 위험 이벤트 저장
 URL 평판 조회
 위험 점수 생성
-FCM 발송
+FCM Web Push 발송
 보호자 동의 검사
 사건 상태 관리
 API 장애 시 fallback
@@ -1135,7 +1172,7 @@ AI 분석
 
 2:35~3:00 — 피해 방지
 
-30분 보호 모드와 공식기관 확인 절차가 실행됩니다.
+현재 사건의 위험 경고와 공식기관 확인 절차가 실행됩니다.
 
 마지막 문장:
 
@@ -1162,7 +1199,9 @@ AI 분석
 
 “문자를 읽는 것이 개인정보 침해 아닌가요?”
 
-기본값은 기기 내부 분석이며 서버에는 위험 특징만 전송합니다. 원문 전송과 보호자 공유는 각각 별도의 동의를 받습니다.
+기본값은 기기 내부 분석이며 서버에는 위험 특징과 평판 조회에 필요한 URL·발신번호만 전송합니다. 조회 원문은 요청 처리 후 폐기합니다. 문자 원문 전송과 보호자 공유는 각각 별도의 동의를 받습니다.
+
+서버 분석용 원문은 요청 메모리에서만 처리합니다. P0에서는 원문을 보호자에게 공유하지 않습니다. P1 보호자 공유용 원문은 별도 사건 승인 시 `RawShareGrant`에 애플리케이션 계층 암호화하여 최대 15분만 보관하고, 지정 보호자의 첫 조회·승인 철회·연결 해제 중 가장 이른 시점에 삭제합니다. 푸시 payload와 로그에는 원문을 넣지 않습니다.
 
 “AI가 정상 전화를 차단하면 어떻게 하나요?”
 

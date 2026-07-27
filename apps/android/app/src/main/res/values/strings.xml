@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">돈워리 기술 스파이크</string>
+    <string name="notification_listener_label">돈워리 문자 알림 확인</string>
+</resources>
