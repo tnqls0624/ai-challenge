@@ -1,0 +1,13 @@
+.gradle
+.idea
+.next
+.turbo
+**/*.md
+apps/android/**
+apps/api/openapi/openapi.json
+build
+coverage
+dist
+node_modules
+pnpm-lock.yaml
+**/next-env.d.ts

@@ -1,0 +1,1835 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1": {
+      "get": {
+        "operationId": "AppController_getMetadata",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceMetadataDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "service"
+        ]
+      }
+    },
+    "/v1/auth/guardian/session": {
+      "post": {
+        "operationId": "AuthController_createSession",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGuardianSessionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/subjects": {
+      "post": {
+        "operationId": "SubjectsController_createSubject",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubjectRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubjectResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "subjects"
+        ]
+      }
+    },
+    "/v1/subjects/{id}/activation-codes": {
+      "post": {
+        "operationId": "SubjectsController_issueActivationCode",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivationCodeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "subjects"
+        ]
+      }
+    },
+    "/v1/devices/activation-previews": {
+      "post": {
+        "operationId": "DevicesController_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationPreviewRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivationPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/devices/activate": {
+      "post": {
+        "operationId": "DevicesController_activate",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivationFinalizeRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/devices/activation-sessions/{sessionToken}": {
+      "delete": {
+        "operationId": "DevicesController_rejectSession",
+        "parameters": [
+          {
+            "name": "sessionToken",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/risk-events": {
+      "post": {
+        "operationId": "RiskEventsController_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRiskEventRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "deviceCredential": []
+          }
+        ],
+        "tags": [
+          "risk-events"
+        ]
+      }
+    },
+    "/v1/risk-events/{id}/post-call-survey": {
+      "post": {
+        "operationId": "RiskEventsController_submitPostCallSurvey",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCallSurveyRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCallSurveyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "deviceCredential": []
+          }
+        ],
+        "tags": [
+          "risk-events"
+        ]
+      }
+    },
+    "/v1/risk-events/{id}": {
+      "get": {
+        "operationId": "RiskEventsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "deviceCredential": []
+          }
+        ],
+        "tags": [
+          "risk-events"
+        ]
+      }
+    },
+    "/v1/incidents": {
+      "get": {
+        "operationId": "IncidentsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IncidentResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "incidents"
+        ]
+      }
+    },
+    "/v1/incidents/{id}": {
+      "get": {
+        "operationId": "IncidentsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "incidents"
+        ]
+      }
+    },
+    "/v1/incidents/{id}/status": {
+      "patch": {
+        "operationId": "IncidentsController_updateStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIncidentStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "incidents"
+        ]
+      }
+    },
+    "/v1/incidents/{id}/stage": {
+      "patch": {
+        "operationId": "IncidentsController_updateStage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIncidentStageRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "incidents"
+        ]
+      }
+    },
+    "/v1/action-items/{id}": {
+      "patch": {
+        "operationId": "IncidentsController_updateActionItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActionItemRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "incidents"
+        ]
+      }
+    },
+    "/v1/guardian-push-subscriptions": {
+      "post": {
+        "operationId": "PushSubscriptionsController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePushSubscriptionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "guardian-push-subscriptions"
+        ]
+      }
+    },
+    "/v1/guardian-push-subscriptions/{id}": {
+      "delete": {
+        "operationId": "PushSubscriptionsController_revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "guardian-push-subscriptions"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "HealthController_checkLive",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_checkReady",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database is unavailable"
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "돈워리 API",
+    "description": "고령자 금융 안전 공동대응 MVP API",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      },
+      "deviceCredential": {
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "ServiceMetadataDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "dont-worry-api"
+          },
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "riskEngineVersion": {
+            "type": "string",
+            "example": "0.1.0"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "riskEngineVersion"
+        ]
+      },
+      "CreateGuardianSessionRequestDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "example": "김보호"
+          }
+        },
+        "required": [
+          "displayName"
+        ]
+      },
+      "GuardianSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "김보호"
+          },
+          "email": {
+            "type": "object",
+            "example": "guardian@example.com",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "email"
+        ]
+      },
+      "CreateSubjectRequestDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "example": "어머니"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "CARE_WORKER",
+              "WELFARE_STAFF",
+              "RELATIVE",
+              "NEIGHBOR",
+              "CHILD"
+            ],
+            "example": "CHILD"
+          }
+        },
+        "required": [
+          "displayName",
+          "role"
+        ]
+      },
+      "SubjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "어머니"
+          },
+          "careConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "careConnectionStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONSENT",
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
+          "version": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "careConnectionId",
+          "careConnectionStatus",
+          "version"
+        ]
+      },
+      "ActivationCodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "응답에서 한 번만 제공되는 6자리 활성화 코드",
+            "example": "123456"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "code",
+          "expiresAt"
+        ]
+      },
+      "ActivationPreviewRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "pattern": "^\\d{6}$"
+          },
+          "deviceInstallationId": {
+            "type": "string",
+            "example": "4d90589b-6840-4cb2-a02e-ace1b33bf42e"
+          }
+        },
+        "required": [
+          "code",
+          "deviceInstallationId"
+        ]
+      },
+      "ActivationConsentTextVersionsDto": {
+        "type": "object",
+        "properties": {
+          "careConnection": {
+            "type": "string",
+            "example": "care-connection-v1"
+          },
+          "autoGuardianAlert": {
+            "type": "string",
+            "example": "auto-guardian-alert-v1"
+          }
+        },
+        "required": [
+          "careConnection",
+          "autoGuardianAlert"
+        ]
+      },
+      "ActivationPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "activationSessionId": {
+            "type": "string",
+            "description": "한 번만 제공되는 opaque activation session token"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "subjectDisplayName": {
+            "type": "string",
+            "example": "어머니"
+          },
+          "guardianDisplayName": {
+            "type": "string",
+            "example": "김보호"
+          },
+          "relationshipRole": {
+            "type": "string",
+            "enum": [
+              "CARE_WORKER",
+              "WELFARE_STAFF",
+              "RELATIVE",
+              "NEIGHBOR",
+              "CHILD"
+            ]
+          },
+          "consentTextVersions": {
+            "$ref": "#/components/schemas/ActivationConsentTextVersionsDto"
+          }
+        },
+        "required": [
+          "activationSessionId",
+          "expiresAt",
+          "subjectDisplayName",
+          "guardianDisplayName",
+          "relationshipRole",
+          "consentTextVersions"
+        ]
+      },
+      "CareConnectionConsentDto": {
+        "type": "object",
+        "properties": {
+          "granted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "example": true
+          },
+          "consentTextVersion": {
+            "type": "string",
+            "example": "care-connection-v1"
+          }
+        },
+        "required": [
+          "granted",
+          "consentTextVersion"
+        ]
+      },
+      "AutoGuardianAlertConsentDto": {
+        "type": "object",
+        "properties": {
+          "granted": {
+            "type": "boolean"
+          },
+          "threshold": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "consentTextVersion": {
+            "type": "string",
+            "example": "auto-guardian-alert-v1"
+          }
+        },
+        "required": [
+          "granted",
+          "threshold",
+          "consentTextVersion"
+        ]
+      },
+      "ActivationFinalizeRequestDto": {
+        "type": "object",
+        "properties": {
+          "activationSessionId": {
+            "type": "string",
+            "description": "preview 응답의 opaque session token"
+          },
+          "deviceInstallationId": {
+            "type": "string",
+            "description": "preview 요청에 사용한 기기 설치 ID"
+          },
+          "devicePublicKey": {
+            "type": "string",
+            "description": "Android Keystore 공개키",
+            "minLength": 32
+          },
+          "shareLevel": {
+            "type": "string",
+            "enum": [
+              "MINIMAL",
+              "BASIC"
+            ]
+          },
+          "careConnectionConsent": {
+            "$ref": "#/components/schemas/CareConnectionConsentDto"
+          },
+          "autoGuardianAlertConsent": {
+            "$ref": "#/components/schemas/AutoGuardianAlertConsentDto"
+          }
+        },
+        "required": [
+          "activationSessionId",
+          "deviceInstallationId",
+          "devicePublicKey",
+          "shareLevel",
+          "careConnectionConsent",
+          "autoGuardianAlertConsent"
+        ]
+      },
+      "ActivationResponseDto": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceCredential": {
+            "type": "string",
+            "description": "한 번만 제공되는 기기 credential"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "careConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shareLevel": {
+            "type": "string",
+            "enum": [
+              "MINIMAL",
+              "BASIC"
+            ]
+          },
+          "autoGuardianAlertThreshold": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "HIGH",
+              "CRITICAL"
+            ]
+          }
+        },
+        "required": [
+          "deviceId",
+          "deviceCredential",
+          "subjectId",
+          "careConnectionId",
+          "shareLevel",
+          "autoGuardianAlertThreshold"
+        ]
+      },
+      "RiskEventSenderDto": {
+        "type": "object",
+        "properties": {
+          "masked": {
+            "type": "string",
+            "example": "010-****-1234"
+          },
+          "normalized": {
+            "type": "string",
+            "description": "평판 조회 후 즉시 폐기되는 E.164 번호",
+            "example": "+821012341234"
+          }
+        },
+        "required": [
+          "masked",
+          "normalized"
+        ]
+      },
+      "RiskEventUrlDto": {
+        "type": "object",
+        "properties": {
+          "canonical": {
+            "type": "string",
+            "example": "https://example.invalid/pay?case=fixture",
+            "maxLength": 2048
+          },
+          "normalizedDomain": {
+            "type": "string",
+            "example": "example.invalid"
+          },
+          "normalizedUrlHash": {
+            "type": "string",
+            "description": "canonical URL의 SHA-256 hex"
+          }
+        },
+        "required": [
+          "canonical",
+          "normalizedDomain",
+          "normalizedUrlHash"
+        ]
+      },
+      "RiskEventFeaturesDto": {
+        "type": "object",
+        "properties": {
+          "contentAvailable": {
+            "type": "boolean"
+          },
+          "extractionComplete": {
+            "type": "boolean"
+          },
+          "contentTruncated": {
+            "type": "boolean"
+          },
+          "normalizedLength": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20000
+          },
+          "impersonatedEntityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "PUBLIC_AGENCY",
+                "LAW_ENFORCEMENT",
+                "FINANCIAL_INSTITUTION",
+                "FAMILY",
+                "DELIVERY"
+              ]
+            }
+          },
+          "riskKeywordIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "URGENCY",
+                "FEAR",
+                "SECRECY",
+                "PAYMENT_REQUEST",
+                "APP_INSTALL",
+                "REMOTE_CONTROL",
+                "SECRET_REQUEST"
+              ]
+            }
+          },
+          "requestsPayment": {
+            "type": "boolean"
+          },
+          "requestsAppInstall": {
+            "type": "boolean"
+          },
+          "requestsRemoteControl": {
+            "type": "boolean"
+          },
+          "requestsSecret": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contentAvailable",
+          "extractionComplete",
+          "contentTruncated",
+          "normalizedLength",
+          "impersonatedEntityTypes",
+          "riskKeywordIds",
+          "requestsPayment",
+          "requestsAppInstall",
+          "requestsRemoteControl",
+          "requestsSecret"
+        ]
+      },
+      "LocalRiskDecisionDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "CAUTION",
+              "HIGH",
+              "CRITICAL"
+            ]
+          }
+        },
+        "required": [
+          "level"
+        ]
+      },
+      "CreateRiskEventRequestDto": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "example": 1
+          },
+          "policyVersion": {
+            "type": "string",
+            "example": "2026-07-28.1"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SMS",
+              "CALL",
+              "URL",
+              "MANUAL"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/RiskEventSenderDto"
+          },
+          "urls": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskEventUrlDto"
+            }
+          },
+          "features": {
+            "$ref": "#/components/schemas/RiskEventFeaturesDto"
+          },
+          "localDecision": {
+            "$ref": "#/components/schemas/LocalRiskDecisionDto"
+          },
+          "rawText": {
+            "type": "string",
+            "description": "RAW_SERVER_ANALYSIS 동의가 있을 때만 메모리에서 분석하고 저장하지 않음",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "policyVersion",
+          "eventId",
+          "type",
+          "occurredAt",
+          "urls",
+          "features"
+        ]
+      },
+      "RiskSignalResponseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "VERIFIED_MALICIOUS_URL",
+              "SUSPICIOUS_DOMAIN",
+              "SHORTENED_URL",
+              "PAYMENT_REQUEST",
+              "APP_INSTALL_REQUEST",
+              "REMOTE_CONTROL_REQUEST",
+              "SECRET_REQUEST",
+              "IMPERSONATION_OR_PRESSURE",
+              "REPORTED_PHONE",
+              "RECENT_SUSPICIOUS_EVENT",
+              "USER_CONFIRMED_LINK_OPENED",
+              "USER_CONFIRMED_PERSONAL_INFO",
+              "USER_CONFIRMED_APP_INSTALL",
+              "USER_CONFIRMED_TRANSFER"
+            ]
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "URL_REPUTATION",
+              "RISKY_ACTION",
+              "IMPERSONATION_PRESSURE",
+              "PHONE_REPUTATION",
+              "CORRELATION"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "CORRELATION",
+              "KISA",
+              "PHONE_REPUTATION",
+              "RULE",
+              "SAFE_BROWSING",
+              "USER"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "group",
+          "score",
+          "evidence",
+          "source"
+        ]
+      },
+      "RiskEventResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "서버 RiskEvent 식별자"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "기기가 생성한 멱등 이벤트 식별자"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "SAFE",
+              "CAUTION",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "score": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "UNCLASSIFIED",
+              "GOVERNMENT_IMPERSONATION",
+              "FAMILY_IMPERSONATION",
+              "FINANCIAL_FRAUD",
+              "MALWARE_INSTALLATION",
+              "CREDENTIAL_THEFT"
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "PROVISIONAL",
+              "FINAL",
+              "FINALIZED_PARTIAL"
+            ]
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskSignalResponseDto"
+            }
+          },
+          "recommendedActionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "explanationTitle": {
+            "type": "string"
+          },
+          "explanationBody": {
+            "type": "string"
+          },
+          "explanationSource": {
+            "type": "string",
+            "enum": [
+              "TEMPLATE",
+              "OPENAI"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "eventId",
+          "level",
+          "score",
+          "category",
+          "confidence",
+          "completeness",
+          "policyVersion",
+          "signals",
+          "recommendedActionIds",
+          "explanationTitle",
+          "explanationBody",
+          "explanationSource",
+          "occurredAt",
+          "createdAt"
+        ]
+      },
+      "PostCallSurveyRequestDto": {
+        "type": "object",
+        "properties": {
+          "requestedPayment": {
+            "type": "boolean"
+          },
+          "requestedAppInstall": {
+            "type": "boolean"
+          },
+          "requestedRemoteControl": {
+            "type": "boolean"
+          },
+          "requestedSecret": {
+            "type": "boolean"
+          },
+          "clickedLink": {
+            "type": "boolean"
+          },
+          "enteredPersonalInformation": {
+            "type": "boolean"
+          },
+          "installedApp": {
+            "type": "boolean"
+          },
+          "transferredMoney": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "requestedPayment",
+          "requestedAppInstall",
+          "requestedRemoteControl",
+          "requestedSecret",
+          "clickedLink",
+          "enteredPersonalInformation",
+          "installedApp",
+          "transferredMoney"
+        ]
+      },
+      "PostCallSurveyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "서버 RiskEvent 식별자"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "기기가 생성한 멱등 이벤트 식별자"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "SAFE",
+              "CAUTION",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "score": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "UNCLASSIFIED",
+              "GOVERNMENT_IMPERSONATION",
+              "FAMILY_IMPERSONATION",
+              "FINANCIAL_FRAUD",
+              "MALWARE_INSTALLATION",
+              "CREDENTIAL_THEFT"
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "PROVISIONAL",
+              "FINAL",
+              "FINALIZED_PARTIAL"
+            ]
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskSignalResponseDto"
+            }
+          },
+          "recommendedActionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "explanationTitle": {
+            "type": "string"
+          },
+          "explanationBody": {
+            "type": "string"
+          },
+          "explanationSource": {
+            "type": "string",
+            "enum": [
+              "TEMPLATE",
+              "OPENAI"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "incidentStage": {
+            "type": "string",
+            "enum": [
+              "S0",
+              "S1",
+              "S2",
+              "S3",
+              "S4"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "eventId",
+          "level",
+          "score",
+          "category",
+          "confidence",
+          "completeness",
+          "policyVersion",
+          "signals",
+          "recommendedActionIds",
+          "explanationTitle",
+          "explanationBody",
+          "explanationSource",
+          "occurredAt",
+          "createdAt"
+        ]
+      },
+      "IncidentActionItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actionId": {
+            "type": "string",
+            "example": "STOP_CONTACT"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "COMPLETED"
+            ]
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "completedAt": {
+            "type": "object",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "actionId",
+          "title",
+          "status",
+          "sortOrder"
+        ]
+      },
+      "IncidentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectDisplayName": {
+            "type": "string"
+          },
+          "shareLevel": {
+            "type": "string",
+            "enum": [
+              "MINIMAL",
+              "BASIC"
+            ]
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN",
+              "SAFE",
+              "CAUTION",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "SMS",
+              "CALL",
+              "URL",
+              "MANUAL"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ACKNOWLEDGED",
+              "IN_PROGRESS",
+              "ESCALATED",
+              "RESOLVED"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "S0",
+              "S1",
+              "S2",
+              "S3",
+              "S4"
+            ],
+            "nullable": true
+          },
+          "version": {
+            "type": "number",
+            "example": 1
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderMasked": {
+            "type": "object",
+            "nullable": true
+          },
+          "summary": {
+            "type": "object",
+            "nullable": true
+          },
+          "summarySource": {
+            "type": "string",
+            "enum": [
+              "TEMPLATE",
+              "OPENAI"
+            ],
+            "nullable": true
+          },
+          "signalTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actionItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentActionItemResponseDto"
+            }
+          },
+          "notificationStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SENT",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "subjectDisplayName",
+          "shareLevel",
+          "riskLevel",
+          "eventType",
+          "status",
+          "version",
+          "occurredAt",
+          "updatedAt",
+          "signalTypes",
+          "actionItems"
+        ]
+      },
+      "UpdateIncidentStatusRequestDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACKNOWLEDGED",
+              "IN_PROGRESS",
+              "ESCALATED",
+              "RESOLVED"
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "status"
+        ]
+      },
+      "UpdateIncidentStageRequestDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "S0",
+              "S1",
+              "S2",
+              "S3",
+              "S4"
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "stage"
+        ]
+      },
+      "UpdateActionItemRequestDto": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "completed"
+        ]
+      },
+      "CreatePushSubscriptionRequestDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Firebase Cloud Messaging browser registration token",
+            "minLength": 20,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "PushSubscriptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "REVOKED",
+              "INVALID"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "createdAt"
+        ]
+      },
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ],
+            "example": "ok"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-07-28T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ]
+      }
+    }
+  }
+}

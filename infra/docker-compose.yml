@@ -1,0 +1,21 @@
+name: dont-worry
+
+services:
+  postgres:
+    image: postgres:17.7-alpine
+    environment:
+      POSTGRES_DB: dontworry
+      POSTGRES_PASSWORD: dontworry_local
+      POSTGRES_USER: dontworry
+    ports:
+      - '127.0.0.1:5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dontworry -d dontworry']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

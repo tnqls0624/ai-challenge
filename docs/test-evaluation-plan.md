@@ -1,6 +1,6 @@
 # 돈워리 테스트·평가 계획
 
-> 상태: 실행 전 초안
+> 상태: smoke fixture 자동 평가 구현, frozen dataset·실기기·staging 평가 대기
 >
 > 관련 문서: [시나리오](scenarios.md) · [위험 판정](risk-spec.md) · [Android 스파이크](android-spike.md)
 
@@ -188,3 +188,20 @@ artifact links:
 ```
 
 실패 case를 삭제해 지표를 높이지 않습니다. 정책을 바꿨으면 같은 frozen test로 이전·이후 결과를 함께 제시합니다.
+
+## 13. 현재 자동 평가 스냅샷
+
+`/demo/evaluation`은 공개 데모와 같은 합성 fixture 6건을 브라우저의 공통 RiskEngine으로
+다시 계산합니다.
+
+| 항목 | 2026-07-28 결과 |
+|---|---:|
+| 예상 수준 exact match | 6 / 6 |
+| HIGH·CRITICAL smoke Recall | 4 / 4 |
+| SAFE smoke 오탐 | 0 / 2 |
+| 위험 fixture signal 보유 | 4 / 4 |
+
+이는 데이터 파이프라인·정책 재현을 확인하는 smoke set이며 성능 수치의 근거가 아닙니다.
+기획 목표와 비교하는 Recall·Precision은 family 분리된 frozen dataset을 확보한 뒤 별도
+실행합니다. 화면은 375×812와 1280×720에서 가로 overflow 없이 렌더링되고 콘솔 오류 없이
+평가→데모 이동을 통과했습니다.

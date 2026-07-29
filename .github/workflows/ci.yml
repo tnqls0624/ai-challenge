@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: Node workspace
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.7-alpine
+        env:
+          POSTGRES_DB: dontworry
+          POSTGRES_PASSWORD: dontworry_local
+          POSTGRES_USER: dontworry
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U dontworry -d dontworry"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://dontworry:dontworry_local@localhost:5434/dontworry?schema=public
+      NODE_ENV: test
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          cache: pnpm
+          node-version-file: .nvmrc
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate database schema
+        run: pnpm db:validate
+      - name: Apply migrations
+        run: pnpm db:migrate:deploy
+      - name: Check formatting
+        run: pnpm format
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Test PostgreSQL integration
+        run: pnpm test:integration
+      - name: Build
+        run: pnpm build
+      - name: Verify generated OpenAPI
+        run: |
+          pnpm openapi:generate
+          git diff --exit-code -- apps/api/openapi/openapi.json
+
+  android:
+    name: Android spike
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+      - name: Verify Android
+        run: ./gradlew testDebugUnitTest assembleDebug lintDebug --no-daemon

@@ -1,0 +1,546 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RelationshipRole {
+  CARE_WORKER
+  WELFARE_STAFF
+  RELATIVE
+  NEIGHBOR
+  CHILD
+}
+
+enum CareConnectionStatus {
+  PENDING_CONSENT
+  ACTIVE
+  REVOKED
+}
+
+enum ShareLevel {
+  MINIMAL
+  BASIC
+}
+
+enum AlertThreshold {
+  NONE
+  HIGH
+  CRITICAL
+}
+
+enum ReceiveThreshold {
+  REQUEST_ONLY
+  HIGH
+  CRITICAL
+}
+
+enum DeviceStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+enum ActivationCodeStatus {
+  ISSUED
+  CONSUMED
+  INVALIDATED
+}
+
+enum ActivationSessionStatus {
+  ISSUED
+  CONSUMED
+  INVALIDATED
+}
+
+enum ConsentType {
+  CARE_CONNECTION
+  AUTO_GUARDIAN_ALERT
+  RAW_SERVER_ANALYSIS
+  MODEL_IMPROVEMENT
+}
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+}
+
+enum RiskEventType {
+  SMS
+  CALL
+  URL
+  MANUAL
+}
+
+enum RiskLevel {
+  UNKNOWN
+  SAFE
+  CAUTION
+  HIGH
+  CRITICAL
+}
+
+enum RiskCategory {
+  UNCLASSIFIED
+  GOVERNMENT_IMPERSONATION
+  FAMILY_IMPERSONATION
+  FINANCIAL_FRAUD
+  MALWARE_INSTALLATION
+  CREDENTIAL_THEFT
+}
+
+enum AnalysisConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AnalysisStatus {
+  RECEIVED
+  LOCAL_ANALYZED
+  REPUTATION_CHECKING
+  FINALIZED
+  FINALIZED_PARTIAL
+}
+
+enum AnalysisCompleteness {
+  PROVISIONAL
+  FINAL
+  FINALIZED_PARTIAL
+}
+
+enum ExplanationSource {
+  TEMPLATE
+  OPENAI
+}
+
+enum UrlReputation {
+  CLEAR
+  MALICIOUS
+  SHORTENED
+  SUSPICIOUS
+  UNAVAILABLE
+}
+
+enum RiskSignalGroup {
+  URL_REPUTATION
+  RISKY_ACTION
+  IMPERSONATION_PRESSURE
+  PHONE_REPUTATION
+  CORRELATION
+}
+
+enum RiskSignalSource {
+  CORRELATION
+  KISA
+  PHONE_REPUTATION
+  RULE
+  SAFE_BROWSING
+  USER
+}
+
+enum IncidentStage {
+  S0
+  S1
+  S2
+  S3
+  S4
+}
+
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  ESCALATED
+  RESOLVED
+}
+
+enum ActionItemStatus {
+  PENDING
+  COMPLETED
+}
+
+enum NotificationOutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum NotificationDeliveryStatus {
+  SENT
+  FAILED
+}
+
+enum PushSubscriptionStatus {
+  ACTIVE
+  REVOKED
+  INVALID
+}
+
+model GuardianAccount {
+  id          String   @id @default(uuid()) @db.Uuid
+  firebaseUid String   @unique @map("firebase_uid") @db.VarChar(128)
+  displayName String   @map("display_name") @db.VarChar(80)
+  email       String?  @db.VarChar(254)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  activationCodes    ActivationCode[]
+  actionItems        ActionItem[]
+  careConnections    CareConnection[]
+  idempotencyRecords IdempotencyRecord[]
+  incidentHistory    IncidentHistory[]
+  notificationOutbox NotificationOutbox[]
+  pushSubscriptions  GuardianPushSubscription[]
+
+  @@map("guardian_accounts")
+}
+
+model SubjectProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  displayName String   @map("display_name") @db.VarChar(80)
+  version     Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  activationCodes ActivationCode[]
+  careConnections CareConnection[]
+  consents        Consent[]
+  devices         Device[]
+  incidents       Incident[]
+  riskEvents      RiskEvent[]
+
+  @@map("subject_profiles")
+}
+
+model CareConnection {
+  id                       String               @id @default(uuid()) @db.Uuid
+  guardianId               String               @map("guardian_id") @db.Uuid
+  subjectId                String               @map("subject_id") @db.Uuid
+  role                     RelationshipRole
+  status                   CareConnectionStatus @default(PENDING_CONSENT)
+  shareLevel               ShareLevel           @default(MINIMAL) @map("share_level")
+  autoAlertThreshold       AlertThreshold       @default(NONE) @map("auto_alert_threshold")
+  guardianReceiveThreshold ReceiveThreshold     @default(CRITICAL) @map("guardian_receive_threshold")
+  pushEnabled              Boolean              @default(true) @map("push_enabled")
+  subjectSettingsVersion   Int                  @default(1) @map("subject_settings_version")
+  guardianSettingsVersion  Int                  @default(1) @map("guardian_settings_version")
+  activatedAt              DateTime?            @map("activated_at") @db.Timestamptz(3)
+  revokedAt                DateTime?            @map("revoked_at") @db.Timestamptz(3)
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  guardian           GuardianAccount      @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  subject            SubjectProfile       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  consents           Consent[]
+  notificationOutbox NotificationOutbox[]
+
+  @@unique([guardianId, subjectId])
+  @@index([guardianId, status])
+  @@index([subjectId, status])
+  @@map("care_connections")
+}
+
+model ActivationCode {
+  id            String               @id @default(uuid()) @db.Uuid
+  guardianId    String               @map("guardian_id") @db.Uuid
+  subjectId     String               @map("subject_id") @db.Uuid
+  codeDigest    String               @map("code_digest") @db.Char(64)
+  status        ActivationCodeStatus @default(ISSUED)
+  attempts      Int                  @default(0)
+  expiresAt     DateTime             @map("expires_at") @db.Timestamptz(3)
+  lastAttemptAt DateTime?            @map("last_attempt_at") @db.Timestamptz(3)
+  consumedAt    DateTime?            @map("consumed_at") @db.Timestamptz(3)
+  invalidatedAt DateTime?            @map("invalidated_at") @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  guardian GuardianAccount     @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  subject  SubjectProfile      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  sessions ActivationSession[]
+
+  @@index([guardianId, createdAt])
+  @@index([codeDigest, status])
+  @@index([subjectId, status, expiresAt])
+  @@map("activation_codes")
+}
+
+model ActivationSession {
+  id                       String                  @id @default(uuid()) @db.Uuid
+  activationCodeId         String                  @map("activation_code_id") @db.Uuid
+  tokenDigest              String                  @unique @map("token_digest") @db.Char(64)
+  deviceInstallationDigest String                  @map("device_installation_digest") @db.Char(64)
+  status                   ActivationSessionStatus @default(ISSUED)
+  expiresAt                DateTime                @map("expires_at") @db.Timestamptz(3)
+  consumedAt               DateTime?               @map("consumed_at") @db.Timestamptz(3)
+  invalidatedAt            DateTime?               @map("invalidated_at") @db.Timestamptz(3)
+  createdAt                DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  activationCode ActivationCode @relation(fields: [activationCodeId], references: [id], onDelete: Cascade)
+
+  @@index([activationCodeId, status])
+  @@index([deviceInstallationDigest, createdAt])
+  @@index([status, expiresAt])
+  @@map("activation_sessions")
+}
+
+model Device {
+  id                   String       @id @default(uuid()) @db.Uuid
+  subjectId            String       @map("subject_id") @db.Uuid
+  publicKeyFingerprint String       @unique @map("public_key_fingerprint") @db.Char(64)
+  credentialDigest     String       @unique @map("credential_digest") @db.Char(64)
+  status               DeviceStatus @default(PENDING)
+  activatedAt          DateTime?    @map("activated_at") @db.Timestamptz(3)
+  lastSeenAt           DateTime?    @map("last_seen_at") @db.Timestamptz(3)
+  revokedAt            DateTime?    @map("revoked_at") @db.Timestamptz(3)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subject    SubjectProfile @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  consents   Consent[]
+  riskEvents RiskEvent[]
+
+  @@index([subjectId, status])
+  @@map("devices")
+}
+
+model Consent {
+  id           String        @id @default(uuid()) @db.Uuid
+  subjectId    String        @map("subject_id") @db.Uuid
+  deviceId     String?       @map("device_id") @db.Uuid
+  connectionId String?       @map("connection_id") @db.Uuid
+  type         ConsentType
+  status       ConsentStatus
+  textVersion  String        @map("text_version") @db.VarChar(40)
+  scope        Json?
+  grantedAt    DateTime?     @map("granted_at") @db.Timestamptz(3)
+  revokedAt    DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  subject    SubjectProfile  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  device     Device?         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  connection CareConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId, type, createdAt])
+  @@index([connectionId, type, status])
+  @@map("consents")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  guardianId     String?  @map("guardian_id") @db.Uuid
+  scope          String   @db.VarChar(64)
+  keyDigest      String   @map("key_digest") @db.Char(64)
+  requestDigest  String   @map("request_digest") @db.Char(64)
+  resourceId     String   @map("resource_id") @db.Uuid
+  responseStatus Int      @map("response_status")
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  guardian GuardianAccount? @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@unique([scope, keyDigest])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+model RiskEvent {
+  id                   String               @id @default(uuid()) @db.Uuid
+  clientEventId        String               @map("client_event_id") @db.VarChar(128)
+  subjectId            String               @map("subject_id") @db.Uuid
+  deviceId             String               @map("device_id") @db.Uuid
+  type                 RiskEventType
+  riskLevel            RiskLevel            @map("risk_level")
+  riskScore            Int?                 @map("risk_score")
+  category             RiskCategory
+  confidence           AnalysisConfidence
+  analysisStatus       AnalysisStatus       @map("analysis_status")
+  analysisCompleteness AnalysisCompleteness @map("analysis_completeness")
+  occurredAt           DateTime             @map("occurred_at") @db.Timestamptz(3)
+  policyVersion        String               @map("policy_version") @db.VarChar(40)
+  schemaVersion        Int                  @map("schema_version")
+  requestDigest        String               @map("request_digest") @db.Char(64)
+  senderMasked         String?              @map("sender_masked") @db.VarChar(40)
+  senderHash           String?              @map("sender_hash") @db.Char(64)
+  normalizedLength     Int                  @map("normalized_length")
+  featureSnapshot      Json                 @map("feature_snapshot")
+  recommendedActionIds String[]             @map("recommended_action_ids")
+  explanationTitle     String?              @map("explanation_title") @db.VarChar(80)
+  explanationBody      String?              @map("explanation_body") @db.VarChar(300)
+  explanationSource    ExplanationSource    @default(TEMPLATE) @map("explanation_source")
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subject  SubjectProfile @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  device   Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  signals  RiskSignal[]
+  urls     RiskEventUrl[]
+  incident Incident?
+
+  @@unique([deviceId, clientEventId])
+  @@index([subjectId, occurredAt])
+  @@index([subjectId, riskLevel, occurredAt])
+  @@map("risk_events")
+}
+
+model RiskEventUrl {
+  id                String        @id @default(uuid()) @db.Uuid
+  eventId           String        @map("event_id") @db.Uuid
+  normalizedDomain  String        @map("normalized_domain") @db.VarChar(253)
+  normalizedUrlHash String        @map("normalized_url_hash") @db.Char(64)
+  reputation        UrlReputation
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  event RiskEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, normalizedUrlHash])
+  @@index([normalizedDomain])
+  @@index([normalizedUrlHash])
+  @@map("risk_event_urls")
+}
+
+model RiskSignal {
+  id        String           @id @default(uuid()) @db.Uuid
+  eventId   String           @map("event_id") @db.Uuid
+  type      String           @db.VarChar(64)
+  group     RiskSignalGroup
+  score     Int
+  evidence  String           @db.VarChar(240)
+  source    RiskSignalSource
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  event RiskEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, score])
+  @@map("risk_signals")
+}
+
+model Incident {
+  id             String            @id @default(uuid()) @db.Uuid
+  subjectId      String            @map("subject_id") @db.Uuid
+  riskEventId    String            @unique @map("risk_event_id") @db.Uuid
+  stage          IncidentStage     @default(S0)
+  status         IncidentStatus    @default(OPEN)
+  summary        String?           @db.VarChar(400)
+  summarySource  ExplanationSource @default(TEMPLATE) @map("summary_source")
+  version        Int               @default(1)
+  acknowledgedAt DateTime?         @map("acknowledged_at") @db.Timestamptz(3)
+  resolvedAt     DateTime?         @map("resolved_at") @db.Timestamptz(3)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subject            SubjectProfile       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  riskEvent          RiskEvent            @relation(fields: [riskEventId], references: [id], onDelete: Cascade)
+  actionItems        ActionItem[]
+  history            IncidentHistory[]
+  notificationOutbox NotificationOutbox[]
+
+  @@index([subjectId, status, updatedAt])
+  @@index([status, updatedAt])
+  @@map("incidents")
+}
+
+model IncidentHistory {
+  id              String          @id @default(uuid()) @db.Uuid
+  incidentId      String          @map("incident_id") @db.Uuid
+  actorGuardianId String?         @map("actor_guardian_id") @db.Uuid
+  fromStatus      IncidentStatus? @map("from_status")
+  toStatus        IncidentStatus? @map("to_status")
+  fromStage       IncidentStage?  @map("from_stage")
+  toStage         IncidentStage?  @map("to_stage")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  incident      Incident         @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  actorGuardian GuardianAccount? @relation(fields: [actorGuardianId], references: [id], onDelete: SetNull)
+
+  @@index([incidentId, createdAt])
+  @@map("incident_history")
+}
+
+model ActionItem {
+  id                 String           @id @default(uuid()) @db.Uuid
+  incidentId         String           @map("incident_id") @db.Uuid
+  stage              IncidentStage    @default(S0)
+  actionId           String           @map("action_id") @db.VarChar(64)
+  title              String           @db.VarChar(120)
+  status             ActionItemStatus @default(PENDING)
+  sortOrder          Int              @map("sort_order")
+  assignedGuardianId String?          @map("assigned_guardian_id") @db.Uuid
+  completedAt        DateTime?        @map("completed_at") @db.Timestamptz(3)
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  incident         Incident         @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  assignedGuardian GuardianAccount? @relation(fields: [assignedGuardianId], references: [id], onDelete: SetNull)
+
+  @@unique([incidentId, stage, actionId])
+  @@index([incidentId, stage, status, sortOrder])
+  @@map("action_items")
+}
+
+model GuardianPushSubscription {
+  id              String                 @id @default(uuid()) @db.Uuid
+  guardianId      String                 @map("guardian_id") @db.Uuid
+  tokenDigest     String                 @unique @map("token_digest") @db.Char(64)
+  tokenCiphertext String                 @map("token_ciphertext")
+  status          PushSubscriptionStatus @default(ACTIVE)
+  failureCount    Int                    @default(0) @map("failure_count")
+  lastUsedAt      DateTime?              @map("last_used_at") @db.Timestamptz(3)
+  revokedAt       DateTime?              @map("revoked_at") @db.Timestamptz(3)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  guardian   GuardianAccount        @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([guardianId, status])
+  @@map("guardian_push_subscriptions")
+}
+
+model NotificationOutbox {
+  id            String                   @id @default(uuid()) @db.Uuid
+  incidentId    String                   @map("incident_id") @db.Uuid
+  guardianId    String                   @map("guardian_id") @db.Uuid
+  connectionId  String                   @map("connection_id") @db.Uuid
+  dedupeKey     String                   @unique @map("dedupe_key") @db.VarChar(160)
+  status        NotificationOutboxStatus @default(PENDING)
+  attemptCount  Int                      @default(0) @map("attempt_count")
+  nextAttemptAt DateTime                 @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+  lockedAt      DateTime?                @map("locked_at") @db.Timestamptz(3)
+  lockOwner     String?                  @map("lock_owner") @db.VarChar(80)
+  lastErrorCode String?                  @map("last_error_code") @db.VarChar(80)
+  sentAt        DateTime?                @map("sent_at") @db.Timestamptz(3)
+  createdAt     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  incident   Incident               @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  guardian   GuardianAccount        @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  connection CareConnection         @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([status, nextAttemptAt])
+  @@index([incidentId, status])
+  @@map("notification_outbox")
+}
+
+model NotificationDelivery {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  outboxId           String                     @map("outbox_id") @db.Uuid
+  pushSubscriptionId String?                    @map("push_subscription_id") @db.Uuid
+  attempt            Int
+  status             NotificationDeliveryStatus
+  providerMessageId  String?                    @map("provider_message_id") @db.VarChar(256)
+  errorCode          String?                    @map("error_code") @db.VarChar(80)
+  createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  outbox           NotificationOutbox        @relation(fields: [outboxId], references: [id], onDelete: Cascade)
+  pushSubscription GuardianPushSubscription? @relation(fields: [pushSubscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([outboxId, attempt])
+  @@map("notification_deliveries")
+}

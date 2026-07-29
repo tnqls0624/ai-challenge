@@ -45,12 +45,12 @@
 | 보호자 인증 | Firebase Authentication | 확정 |
 | 보호자 알림 | FCM Web Push | 확정 |
 | URL 평판 | KISA local snapshot + Google Safe Browsing | 확정 |
-| 생성형 AI | 공급자 중립 LLM adapter | 확정 |
+| 생성형 AI | OpenAI Responses adapter + 공급자 중립 interface + template fallback | 구현, 모델 선정 대기 |
 | 데이터 정제·평가 | Python 선택 사용 | 보조 |
 | 로컬 인프라 | Docker Compose PostgreSQL | 확정 |
 | 패키지 관리자 | pnpm | 확정 |
 | CI/CD | GitHub Actions | 확정 |
-| 오류 추적 | Sentry | 확정 |
+| 오류 추적 | Sentry Web·API optional adapter | 구현, 계정·DSN 승인 대기 |
 
 ## 3. 언어 전략
 
@@ -308,6 +308,11 @@ apps/web/app/
 - 푸시와 외부 평판 응답은 합성 상태로 표시하고 실제 FCM·외부 API를 호출하지 않습니다.
 - 이 경계는 feature flag가 아니라 import·dependency test와 E2E로 검증합니다.
 
+현재 `/demo`는 위 경계로 구현되어 6개 고정 fixture의 기대 수준 unit test, Chromium
+desktop 1440×1000·mobile 390×844, 5단계 전환, 체크리스트와 새로고침 session 복원을
+검증했습니다. `/demo/evaluation`은 같은 fixture의 예상·실제 수준과 명시적인 분모를
+표시합니다. Render Singapore 구성은 확정했고 운영 URL은 계정·비용 승인 후 채웁니다.
+
 ## 8. 데이터베이스와 migration
 
 ### 8-1. PostgreSQL
@@ -365,6 +370,11 @@ MVP production은 NestJS API 단일 인스턴스에서 `WORKER_ENABLED=true`로 
 
 위험 수준은 LLM 호출 전 확정합니다. LLM 출력은 위험 수준, 점수, 알림 여부를 바꿀 수 없습니다.
 점수 구간, 강제 규칙, `UNKNOWN`·`FINALIZED_PARTIAL` 처리와 `PROVISIONAL`→`FINAL` 전이는 [위험 판정 사양](risk-spec.md)을 단일 기준으로 사용합니다. Android와 NestJS 양쪽에서 같은 golden fixture를 실행해 결과 불일치를 CI에서 차단합니다.
+
+설명 interface는 원문이나 연락처가 아니라 확정된 신호·행동 ID·사건 단계만 받습니다.
+기본 provider는 template이고, OpenAI provider를 명시적으로 켠 경우에만 Responses API를
+`store=false`, 1.5초 timeout, strict JSON schema로 호출합니다. 외부 호출 실패나 근거
+검사 실패는 API 성공 여부에 영향을 주지 않고 template로 완료합니다.
 
 ### 9-2. Python 선택 사용
 

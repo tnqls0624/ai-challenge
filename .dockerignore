@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+.git
+.github
+.gstack
+.local-backups
+.turbo
+**/.next
+**/build
+**/dist
+**/node_modules
+apps/android
+docs
+*.log

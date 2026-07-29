@@ -44,27 +44,38 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 32, 32, 32)
             addView(TextView(this@MainActivity).apply {
-                text = "돈워리 Android 기술 스파이크"
+                text = "돈워리"
                 textSize = 26f
             })
             addView(status)
-            addView(actionButton("1. 알림 접근 설정 열기") {
+            addView(actionButton("1. 보호자와 6자리 코드로 연결") {
+                startActivity(Intent(this@MainActivity, ActivationActivity::class.java))
+            })
+            addView(actionButton("2. 문자 직접 확인") {
+                startActivity(Intent(this@MainActivity, ManualCheckActivity::class.java))
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "자동 감지 기술 검증"
+                textSize = 20f
+                setPadding(0, 32, 0, 0)
+            })
+            addView(actionButton("3. 알림 접근 설정 열기") {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             })
-            addView(actionButton("2. 합성 메시지 알림 보내기") {
+            addView(actionButton("4. 합성 메시지 알림 보내기") {
                 SpikeNotifications.postFixture(this@MainActivity)
             })
-            addView(actionButton("3. 전화 선별 역할 요청") {
+            addView(actionButton("5. 전화 선별 역할 요청") {
                 requestCallScreeningRole()
             })
-            addView(actionButton("4. 고우선순위 경고 시험") {
+            addView(actionButton("6. 고우선순위 경고 시험") {
                 SpikeNotifications.showWarning(
                     this@MainActivity,
                     "매우 위험한 요청입니다",
                     "송금하거나 앱을 설치하지 말고 보호자에게 확인하세요.",
                 )
             })
-            addView(actionButton("5. 통화 후 설문 알림 시험") {
+            addView(actionButton("7. 통화 후 설문 알림 시험") {
                 SpikeNotifications.showSurvey(this@MainActivity)
             })
             addView(actionButton("상태 새로고침") {
@@ -133,6 +144,7 @@ class MainActivity : Activity() {
             roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
         val defaultDialer = getSystemService(TelecomManager::class.java).defaultDialerPackage
         val telemetry = SpikeTelemetryStore(this).snapshot()
+        val deviceSession = DeviceSessionStore(this).snapshot()
         val fullScreenAllowed = if (Build.VERSION.SDK_INT >= 34) {
             getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
         } else {
@@ -142,6 +154,8 @@ class MainActivity : Activity() {
         status.text = """
             API: ${Build.VERSION.SDK_INT}
             기기: ${Build.MANUFACTURER} ${Build.MODEL}
+            보호자 연결: ${if (deviceSession.connected) "연결됨" else "연결 필요"}
+            서버: ${BuildConfig.API_BASE_URL}
             알림 접근: $listenerEnabled
             전화 선별 역할: $roleHeld
             기본 전화 앱: ${defaultDialer ?: "없음"}

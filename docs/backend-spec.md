@@ -1,12 +1,21 @@
 # 돈워리 MVP 백엔드 사양
 
-> 상태: 구현 기준 초안
+> 상태: 구현 추적 중 — 실제 계약은 생성 OpenAPI 우선
 >
 > 관련 문서: [인프라 아키텍처](infrastructure-architecture.md) · [위험 판정](risk-spec.md) · [개인정보·보안](privacy-security.md)
 
 ## 1. 범위
 
 NestJS 모듈형 모놀리스의 인증 주체, REST 계약, 인가, transaction과 데이터 불변조건을 정의합니다. 실제 DTO의 최종 기준은 NestJS에서 생성한 OpenAPI이며 이 문서는 도메인 의미를 정의합니다.
+
+### 1-1. 2026-07-28 구현 스냅샷
+
+구현·검증된 endpoint는 guardian session, subject 생성·활성화 코드, activation
+preview/finalize/reject, risk event 생성·조회·통화 후 설문, incident 목록·상세·상태·S0~S4
+단계 변경, action item 변경, Web Push 구독 등록·해제, health check입니다. 위험 이벤트에는
+검증된 설명과 출처가, 사건에는 보호자용 요약과 출처가 저장됩니다. 정확한 path·DTO·보안
+scheme은 `apps/api/openapi/openapi.json`을 사용합니다. 아래 endpoint matrix에는 아직
+구현하지 않은 P0 목표도 포함되므로 OpenAPI에 없는 항목을 완료 기능으로 해석하지 않습니다.
 
 ## 2. 실행 단위
 
@@ -282,19 +291,24 @@ OPEN → ACKNOWLEDGED → IN_PROGRESS → RESOLVED
 - P1 보호자 공유용 `RawShareGrant`만 애플리케이션 계층 암호화, 15분 TTL, 1회 조회
 - 전화번호 원문은 평판 조회 요청에서만 처리하고 서버 HMAC hash와 화면용 masked 값만 저장
 - 자동 알림은 대상자 승인 임계값과 보호자 수신 임계값 중 더 제한적인 값을 적용
+- LLM 입력은 확정된 `level`, `category`, signal type·evidence, action ID, 사건 단계로 제한하고
+  원문·전화번호·URL은 포함하지 않음
 
 ## 10. Transaction 경계
 
 | 작업 | 같은 transaction에 포함 |
 |---|---|
 | 기기 활성화 | 코드 소비, Device, CareConnection, Consent |
-| 위험도 확정 | RiskEvent, RiskSignal, 필요 시 Incident, NotificationOutbox |
+| 위험도 확정 | RiskEvent·RiskSignal·설명, 필요 시 Incident·요약·NotificationOutbox |
 | 연결 철회 | CareConnection revoke, credential/알림 정책 갱신, AuditLog |
 | 자동 알림 승인·범위 변경·철회 | Consent version, subject threshold, 필요 시 미전송 Outbox CANCELLED, AuditLog |
 | 사건 상태 변경 | Incident version, history, ActionItem 변경 |
 | P1 원문 공유 1회 조회 | grant row lock, 인가·만료 확인, consumed 처리와 ciphertext 삭제 |
 
 외부 FCM·LLM·Safe Browsing 호출은 DB transaction 안에서 실행하지 않습니다.
+설명 adapter는 판정 완료 후 transaction 전에 호출하며 1.5초 timeout, strict JSON schema,
+근거·길이·URL/장문 숫자 검사를 통과하지 못하면 template 결과를 저장합니다. 기본
+`LLM_PROVIDER=template`은 외부 호출을 하지 않습니다.
 
 ## 11. P1 원문 공유 전달
 
@@ -350,7 +364,8 @@ claim PENDING (max 20, due order)
 - 보호자 탈퇴: primary DB 개인정보·사건 접근 정보 즉시 삭제
 - 대상자 삭제: 활성 device credential 즉시 폐기하고 primary data 삭제
 - 감사 로그: 식별자를 가명화하고 90일 후 삭제
-- 관리형 backup: 공급자 선정 후 최대 30일 이내 소거 조건 확정
+- 관리형 backup: Render paid DB PITR 3일·논리 export 7일. primary 삭제는 즉시,
+  production 삭제 drill 후 최종 소거 기한 확정
 
 삭제 작업은 `deletion_request_id`, 시작·완료 시각과 실패 사유를 남기되 삭제 대상 원문은 로그에 남기지 않습니다.
 

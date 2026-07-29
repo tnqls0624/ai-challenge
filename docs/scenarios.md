@@ -78,6 +78,8 @@ expected:
 | `DEMO-06` 피해 발생 | `SCN-028` | S4 대응 체크리스트와 공동대응 |
 
 데모는 `externalFixtures`의 KISA·Safe Browsing·FCM 응답을 고정하고 실제 외부 서비스를 호출하지 않습니다.
+`apps/web/app/demo`에 6개 fixture가 구현되어 공통 RiskEngine 기대 수준 test 8건과
+Chromium desktop·mobile 브라우저 검증을 통과했습니다.
 
 ## 4. 경계값 fixture
 

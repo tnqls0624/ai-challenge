@@ -1,0 +1,31 @@
+packages:
+  - apps/api
+  - apps/web
+  - packages/*
+
+overrides:
+  '@prisma/dev>@hono/node-server': 2.0.10
+  '@prisma/dev>valibot': 1.4.2
+  '@nestjs/swagger>js-yaml': 5.2.2
+  '@sentry/nextjs>@sentry/webpack-plugin': 5.3.0
+  'brace-expansion@2.1.2': 2.1.3
+  'gaxios@6>uuid': 11.1.1
+  'next>postcss': 8.5.19
+  'next>sharp': 0.35.3
+  'teeny-request@9>uuid': 11.1.1
+
+allowBuilds:
+  '@firebase/util': false
+  '@prisma/engines': true
+  '@scarf/scarf': false
+  '@sentry/cli': false
+  prisma: true
+  protobufjs: false
+  sharp: true
+
+engineStrict: true
+nodeVersion: 22.23.1
+saveExact: true
+strictPeerDependencies: true
+minimumReleaseAgeExclude:
+  - brace-expansion@2.1.3

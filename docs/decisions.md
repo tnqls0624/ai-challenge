@@ -30,18 +30,20 @@
 | `D-014` | 2026-07-27 | P0는 대상자당 보호자 1명·MINIMAL/BASIC 공유 | ACCEPTED | 1인 개발 6주 완주, 1:25 보호자 가치 검증에 충분 |
 | `D-015` | 2026-07-27 | Notification Listener·Call Screening은 Phase 0 gate형 P0 | ACCEPTED | 8시간 실기기 검증 실패 시 수동 경로로 즉시 축소 |
 | `D-016` | 2026-07-28 | 자동 문자·전화 감지는 조건부 P0를 유지하되 Samsung 실기기 검증 전에는 `VERIFIED`로 승격하지 않음 | ACCEPTED | API 29·36 에뮬레이터 gate 통과, Samsung Messages·Phone 조합은 미검증 |
+| `D-017` | 2026-07-28 | LLM 설명은 기본 비활성 template과 선택형 OpenAI adapter로 운영 | ACCEPTED | 판정 후 최소 신호만 전송, 1.5초 timeout·strict schema·근거 검사·무조건 fallback |
+| `D-018` | 2026-07-28 | MVP Web/API/PostgreSQL은 Render Singapore의 유료 최소 plan으로 통합 운영 | ACCEPTED | 1인 운영 단순성, Blueprint 재현성, 무수면 Web/API, paid DB PITR·backup |
 
-## 미결정
+## 결정 추적
 
-| ID | 결정 | 현재 기본값 | 결정 시점 | 필요한 근거 |
-|---|---|---|---|---|
-| `P-001` | Web/API/PostgreSQL 공급자 | 관리형 서비스 | Phase 0 | 서울 리전, cold start, 비용, backup |
-| `P-002` | LLM 공급자 | adapter + template fallback | 데이터 평가 후 | 한국어 품질, latency, 비용, 약관 |
-| `P-003` | Safe Browsing 사용 가능 범위 | 대회 비상업 후보 | 제출 전 | 공식 약관과 대회 운영 성격 |
-| `P-004` | KISA snapshot 형식·갱신 | 마지막 정상 버전 | 데이터 연동 시 | schema, 이용 조건, 갱신주기 |
-| `P-005` | Android 자동 감지 지원 조합 | Samsung 주 기기 | Phase 0 | `android-spike.md` 실측 |
-| `P-006` | 야간·휴무 CRITICAL 수신 | 보조 보호자+공식 경로 | 사용자 테스트 | 생활지원사 운영 현실 |
-| `P-007` | backup 최종 소거 기한 | 최대 30일 목표 | 공급자 선정 | 공급자 보존 정책 |
+| ID | 결정 | 현재 기본값 | 상태 | 필요한 근거 |
+|---|---|---|:---:|---|
+| `P-001` | Web/API/PostgreSQL 공급자 | `D-018` Render Singapore | RESOLVED | container·Blueprint·migration 로컬 검증 완료, 계정 비용 승인 대기 |
+| `P-002` | LLM 공급자·모델 | OpenAI adapter 구현 + template 기본값 | PENDING | 한국어 품질, latency, 비용, 약관 |
+| `P-003` | Safe Browsing 사용 가능 범위 | 대회 비상업 후보 | PENDING | 공식 약관과 대회 운영 성격 |
+| `P-004` | KISA snapshot 형식·갱신 | 마지막 정상 버전 | PENDING | schema, 이용 조건, 갱신주기 |
+| `P-005` | Android 자동 감지 지원 조합 | Samsung 주 기기 | PENDING | `android-spike.md` 실측 |
+| `P-006` | 야간·휴무 CRITICAL 수신 | 보조 보호자+공식 경로 | PENDING | 생활지원사 운영 현실 |
+| `P-007` | backup 최종 소거 기한 | Render PITR 3일·논리 backup 7일, 최대 30일 목표 | PENDING | 계정·삭제 drill로 실제 소거 확인 |
 
 ## 결정 제안 형식
 

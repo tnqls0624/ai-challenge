@@ -1,0 +1,17 @@
+import * as Sentry from '@sentry/nestjs';
+import { scrubSentryEvent } from './observability/sentry-event-scrubber';
+
+const dsn = process.env.SENTRY_DSN;
+
+if (dsn !== undefined && dsn.length > 0) {
+  Sentry.init({
+    beforeSend: (event) => scrubSentryEvent(event),
+    dsn,
+    environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
+    includeLocalVariables: false,
+    maxBreadcrumbs: 0,
+    release: process.env.SENTRY_RELEASE,
+    sendDefaultPii: false,
+    tracesSampleRate: 0,
+  });
+}

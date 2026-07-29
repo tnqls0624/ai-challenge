@@ -77,6 +77,7 @@
 | 계좌번호 | 탐지 즉시 마스킹 | 원문 없음 | 없음 |
 | 웹 푸시 token | 보호자 브라우저 | 암호화, 구독 종료까지 | 없음 |
 | device credential | Android/API | hash·상태 | 없음 |
+| LLM 설명 입력 | API | 확정된 수준·범주·신호·행동 ID·사건 단계만 일시 처리 | 생성된 쉬운 설명·사건 요약만 |
 
 ## 6. 보존·삭제
 
@@ -113,6 +114,15 @@ account deleted
 - URL은 HTTP(S)만 허용하고 userinfo와 fragment를 제거하며 private·loopback·metadata 주소를 차단합니다.
 - KISA snapshot·자체 도메인 규칙은 domain과 canonical hash로 조회합니다.
 - Safe Browsing direct lookup을 사용할 때는 판정에 필요한 canonical URL과 query가 Google에 전송될 수 있음을 개인정보 안내에 명시합니다.
+
+### 선택형 LLM 설명의 제3자 전송
+
+- 기본 `LLM_PROVIDER=template`은 외부 전송이 없습니다.
+- OpenAI adapter를 켜도 문자 원문·전화번호·URL·대상자 식별자를 보내지 않고 이미 확정된
+  위험 수준·범주·신호 근거·행동 ID·사건 단계만 보냅니다.
+- Responses API 요청은 `store=false`로 보내고 tool·웹 검색을 사용하지 않습니다.
+- 실제 운영 전 공급자 데이터 통제·보존 약관과 모델 품질을 별도로 승인합니다.
+- timeout·거절·형식 오류·근거 불일치 시 외부 결과를 저장하지 않고 template을 사용합니다.
 - 전송 URL은 우리 로그·DB·오류 추적에 남기지 않고 응답 후 폐기합니다.
 - 공급자의 보존·cache·처리 조건을 `data-sources.md`에 승인 기록하기 전에는 production adapter를 활성화하지 않습니다.
 - 조건이 불명확하거나 사용자가 외부 조회를 허용하지 않는 배포에서는 KISA·로컬 규칙만 사용하고 미확인 상태를 표시합니다.
@@ -175,3 +185,30 @@ Sentry request body와 민감 header 수집을 비활성화하고 공통 redacti
 - 외부 API key가 APK·웹 bundle에 없음
 - production·staging Firebase project와 secret 분리
 - Android release signing key가 CI secret과 오프라인 백업에 저장
+
+## 11. 2026-07-28 사전 보안 검토
+
+완료:
+
+- 현재 Git 상태와 history에서 저장소 secret 노출 없음
+- GitHub Actions 외부 action을 full commit SHA로 고정하고 Dependabot 추가
+- Web 전체 경로에 CSP `frame-ancestors 'none'`, `X-Frame-Options: DENY`, nosniff,
+  Referrer-Policy, Permissions-Policy 적용
+- LLM 설명 호출을 기기당 분당 6회·전체 일 500회로 제한하고 10분 cache·template
+  fallback 적용
+- `sharp`, `postcss`, `js-yaml`을 보안 수정 버전으로 강제
+- PostgreSQL dump→격리 DB restore→table·migration·core row 비교 drill 통과
+
+잔여:
+
+- `pnpm audit`의 `brace-expansion@2.1.3` 경고는 해당 유지보수 backport에 길이 제한
+  수정이 포함됐지만 advisory range가 인식하지 못해 남습니다. 현재 production 경로는
+  Firebase Admin의 선택적 Firestore dependency이며 앱의 사용자 입력 처리에는 사용하지
+  않습니다.
+- API·Web Sentry adapter와 event scrubber는 구현됐고 DSN이 없으면 비활성입니다. 계정·DSN
+  승인이 끝난 뒤 실제 event에서 request body, Authorization과 PII가 없는지 staging에서
+  다시 검증합니다.
+- production Firebase·Render secret, Samsung 실기기, staging restore는 실제 환경에서
+  별도 검증해야 합니다.
+
+이 검토는 전문 보안 감사나 법률·개인정보 자문을 대체하지 않습니다.

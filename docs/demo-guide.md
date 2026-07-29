@@ -1,6 +1,6 @@
 # 돈워리 심사·데모 가이드
 
-> 상태: 구현 전 골격
+> 상태: `/demo` 로컬 구현·브라우저 검증 완료, 운영 배포 정보 대기
 >
 > 관련 문서: [시나리오](scenarios.md) · [기능명세서](기능명세서.md) · [릴리스 체크리스트](release-checklist.md)
 
@@ -8,14 +8,18 @@
 
 | 항목 | 값 |
 |---|---|
-| 공개 데모 URL | `TO_BE_FILLED` |
+| 공개 데모 URL | `TO_BE_FILLED` (`/demo` route 로컬 검증 완료) |
 | 보호자 웹 URL | `TO_BE_FILLED` |
 | 보호자 테스트 계정 | `TO_BE_FILLED` |
 | APK 다운로드 URL | `TO_BE_FILLED` |
 | APK SHA-256 | `TO_BE_FILLED` |
-| 권장 브라우저 | 실제 검증 후 입력 |
+| 권장 브라우저 | Chromium desktop 1440×1000·mobile 390×844 |
 | 주 데모 기기 | `android-spike.md` 결과 |
 | release commit | `TO_BE_FILLED` |
+
+공개 URL 배포 후 `/demo/evaluation`에서 6개 합성 fixture의 예상·실제 수준, 분모와 실패
+case를 확인할 수 있습니다. 이 화면은 smoke 재현 결과이며 실제 성능 평가로 인용하지
+않습니다.
 
 공개 데모는 로그인 없이 사용하고 보호자 운영 화면만 테스트 계정을 사용합니다.
 
@@ -40,6 +44,9 @@
 | 6 | 피해 발생 | `SCN-028` | CRITICAL S4, 긴급 대응 |
 
 모든 시나리오는 합성 데이터이며 실제 FCM·외부 API를 호출하지 않습니다.
+각 시나리오는 브라우저의 공통 RiskEngine에서 계산하며 단계 전환과 체크리스트는
+`sessionStorage`에 최대 24시간만 유지됩니다. 새로고침 복원과 console 오류 없음까지
+로컬 production build에서 확인했습니다.
 
 ## 4. 3분 데모
 

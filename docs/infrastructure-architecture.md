@@ -2,7 +2,7 @@
 
 > 상태: MVP 구현 기준안
 >
-> 최종 갱신: 2026-07-27
+> 최종 갱신: 2026-07-28
 >
 > 대상 독자: 풀스택 개발자, 기획·디자인 담당자, 기술 심사위원
 >
@@ -90,7 +90,10 @@ Next.js 웹앱
 | `docs/alert-policy.md` | 위험도별 대상자 경고와 보호자 알림의 기준 문서 |
 | `SCHEDULE.md` | 6주 일정과 담당 시간의 상한 |
 
-현재 저장소에는 애플리케이션·인프라 구현 코드가 없습니다. 위 자산의 계약과 용어를 재사용하고, scaffolding 단계에서 이 문서를 코드 구조와 테스트의 기준으로 삼습니다.
+현재 저장소에는 NestJS API, Next.js 보호자 웹·격리 데모, PostgreSQL·Prisma migration,
+공통 RiskEngine, 선택형 OpenAI 설명 adapter와 template fallback, Android 수동 검사·통화
+후 설문, 기술 스파이크와 CI가 구현되어 있습니다. 이 문서는 구현 구조와 테스트의 기준이며
+실제 HTTP 계약은 생성된 `apps/api/openapi/openapi.json`을 우선합니다.
 
 ## 3. 목표와 비목표
 
@@ -281,7 +284,7 @@ apps/api/src/
 | 사건 상세 | 첫 화면에서 유형·시각·행동 신호·현재 상태 표시 |
 | 대응 | 전화 연결, 체크리스트, 담당 이력과 상태 갱신 |
 | 알림 설정 | 보호자별 임계값·공유 범위·웹 푸시 설정 |
-| 심사위원 데모 | 로그인 없는 합성 시나리오 재생과 분석 근거 표시 |
+| 심사위원 데모 | 로그인 없는 합성 시나리오 재생·분석 근거·smoke 평가 표시 |
 
 ### 8-4. PostgreSQL
 
@@ -296,9 +299,14 @@ PostgreSQL은 애플리케이션 데이터, 관계, 동의, 사건 상태, 재�
 | KISA 데이터 | 알려진 피싱 URL·유형 | 마지막 성공 버전의 로컬 데이터 |
 | Google Safe Browsing | 신규 URL 평판 | KISA·도메인 규칙·UNKNOWN |
 | LLM API | 근거 쉬운 문장·사건 요약 | 검증된 템플릿 |
-| Sentry | 앱·웹·API 장애 관찰 | 구조화 로그와 health check |
+| Sentry | 선택형 Web·API 오류 추적, 계정 승인 후 활성 | Render 로그와 health check |
 
 Safe Browsing direct lookup은 userinfo·fragment와 private·loopback·metadata 주소를 제거·차단한 canonical URL만 전송합니다. query가 필요한 경우 제3자 전송 사실과 공급자 처리 조건을 사전 고지하며, `data-sources.md` 승인 전에는 adapter를 production에서 비활성화합니다.
+
+LLM은 기본 `template` mode로 외부 호출하지 않습니다. OpenAI mode를 선택해도 확정된
+level·category·signal·action ID·incident stage만 `store=false`로 보내며 원문·전화번호·URL은
+보내지 않습니다. 1.5초 timeout과 출력 검사를 통과하지 못하면 같은 요청에서 template로
+완료합니다.
 
 ## 9. 핵심 데이터 흐름
 
@@ -349,7 +357,7 @@ Notification Listener에서 본문을 얻지 못하면 실패로 숨기지 않�
 ```json
 {
   "schemaVersion": 1,
-  "policyVersion": "2026-07-27.1",
+  "policyVersion": "2026-07-28.1",
   "eventId": "device-generated-uuid",
   "type": "SMS",
   "occurredAt": "2026-07-27T12:00:00Z",
@@ -637,7 +645,7 @@ P0는 대상자당 보호자 1명과 `MINIMAL`·`BASIC`만 구현합니다.
 
 자동 알림도 연결마다 양측 범위를 교차 적용합니다. 대상자는 `NONE | HIGH | CRITICAL`, 보호자는 `REQUEST_ONLY | HIGH | CRITICAL` 중 하나를 고르며, 실제 자동 임계값은 두 설정 중 더 제한적인 수준입니다. `꼼꼼하게` 프리셋은 HIGH 동의를 권장하지만 동의를 대신하지 않습니다.
 
-통화 음성, 전체 연락처, 계정·인증 정보는 어떤 공유 수준에도 포함하지 않습니다. 원문 서버 분석은 요청 메모리에서 처리 후 폐기합니다. P1 보호자 공유 원문은 별도 `RawShareGrant`에 애플리케이션 계층 암호화하며 지정 보호자의 첫 조회 또는 최대 15분까지만 보관합니다. 동의를 철회하면 새 상세 조회와 알림을 즉시 막고 활성 grant를 즉시 삭제합니다. 연결만 종료하면 해당 연결의 상세 접근과 grant를 즉시 차단·삭제하고 일반 이벤트를 30일 이내 삭제합니다. 계정 탈퇴는 primary DB의 개인정보와 사건 데이터를 즉시 삭제하고, 감사 로그 식별자는 가명화합니다. 관리형 백업의 최종 소거 기한은 공급자 선정 시 30일 이하로 확정합니다.
+통화 음성, 전체 연락처, 계정·인증 정보는 어떤 공유 수준에도 포함하지 않습니다. 원문 서버 분석은 요청 메모리에서 처리 후 폐기합니다. P1 보호자 공유 원문은 별도 `RawShareGrant`에 애플리케이션 계층 암호화하며 지정 보호자의 첫 조회 또는 최대 15분까지만 보관합니다. 동의를 철회하면 새 상세 조회와 알림을 즉시 막고 활성 grant를 즉시 삭제합니다. 연결만 종료하면 해당 연결의 상세 접근과 grant를 즉시 차단·삭제하고 일반 이벤트를 30일 이내 삭제합니다. 계정 탈퇴는 primary DB의 개인정보와 사건 데이터를 즉시 삭제하고, 감사 로그 식별자는 가명화합니다. Render paid DB의 PITR window는 Hobby workspace 3일이고 논리 export는 생성 후 7일 보관합니다. production 삭제 drill로 최종 소거 기한을 확인합니다.
 
 ### 14-2. 데이터 보존
 
@@ -907,7 +915,12 @@ USER FLOW COVERAGE
 [EVAL] LLM 설명 → 근거 충실성·금지 표현·행동 지침
 ```
 
-현재 저장소에는 구현 코드와 테스트 프레임워크가 없습니다. 위 경로는 scaffolding과 동시에 테스트를 추가하는 기준입니다.
+현재 NestJS·RiskEngine·공통 계약은 unit/integration test로 검증하고 Next.js는
+lint·typecheck·production build를 통과했습니다. 공개 `/demo`는 6개 fixture unit test와
+Chromium desktop·mobile, 단계 전환·session 복원·console 검증을 완료했습니다. Android
+단위 테스트 22건과 debug APK가 통과했고 자동 감지는 API 29·36 emulator를 통과했으며
+Samsung Android 14+ 실기기 검증이 남아 있습니다. 위 표의 미구현 경로는 해당 기능을
+추가할 때의 테스트 완료 기준입니다.
 
 구현 시 복잡한 흐름은 다음 파일에 짧은 ASCII 주석을 함께 둡니다.
 
@@ -935,12 +948,12 @@ USER FLOW COVERAGE
 
 | 결정 | 현재 기본값 | 확정 시점 |
 |---|---|---|
-| 배포 공급자 | 관리형 Web/API/PostgreSQL | Phase 0에서 비용·콜드스타트·리전 확인 |
+| 배포 공급자 | Render Singapore Web/API/PostgreSQL (`D-018`) | Blueprint 로컬 검증 완료·계정 비용 승인 대기 |
 | 생활지원사 야간·휴무 CRITICAL | 대상자 공식기관 경로 + 등록된 보조 보호자, 알림은 보관 | 3주차 사용자 테스트 |
 | 경고 Activity 동작 범위 | 고우선순위 알림 fallback 필수 | Samsung 실기기 스파이크 |
 | KISA 데이터 형식·갱신 | 마지막 성공 snapshot | 2주차 데이터 연동 |
 | Safe Browsing 사용 조건 | 대회 비상업적 데모 | 제출 전 라이선스 재확인 |
-| LLM 공급자 | adapter 뒤에 숨김 | 비용·한국어 품질 eval 후 |
+| LLM 모델 | OpenAI adapter + template 기본값 | 비용·한국어 품질·latency eval 후 |
 
 ## 25. 공식 기술 근거
 

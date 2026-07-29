@@ -1,0 +1,51 @@
+{
+  "name": "@dont-worry/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm prisma:generate && nest build",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:validate": "prisma validate",
+    "dev": "nest start --watch",
+    "lint": "eslint src test",
+    "openapi:generate": "pnpm build && node dist/openapi/generate-openapi.js",
+    "prisma:generate": "prisma generate",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dont-worry/contracts": "workspace:*",
+    "@dont-worry/risk-engine": "workspace:*",
+    "@nestjs/common": "11.1.28",
+    "@nestjs/config": "4.0.4",
+    "@nestjs/core": "11.1.28",
+    "@nestjs/platform-express": "11.1.28",
+    "@nestjs/swagger": "11.4.6",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
+    "@sentry/nestjs": "10.66.0",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "dotenv": "17.2.3",
+    "firebase-admin": "14.2.0",
+    "openai": "6.46.0",
+    "pg": "8.22.0",
+    "prisma": "7.8.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@dont-worry/typescript-config": "workspace:*",
+    "@nestjs/cli": "11.0.24",
+    "@nestjs/testing": "11.1.28",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.1",
+    "@types/pg": "8.20.0",
+    "@types/supertest": "7.2.1",
+    "supertest": "7.2.2"
+  }
+}

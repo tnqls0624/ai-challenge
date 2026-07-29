@@ -2,7 +2,7 @@
 
 > 상태: MVP 구현 기준 초안
 >
-> 정책 버전: `2026-07-27.1`
+> 정책 버전: `2026-07-28.1`
 >
 > 관련 문서: [PRD](../PRD.md) · [알림 정책](alert-policy.md) · [시나리오](scenarios.md) · [인프라 아키텍처](infrastructure-architecture.md)
 
@@ -43,7 +43,7 @@ Android가 API에 보내는 수집 envelope은 다음 형식을 사용합니다.
 ```json
 {
   "schemaVersion": 1,
-  "policyVersion": "2026-07-27.1",
+  "policyVersion": "2026-07-28.1",
   "eventId": "uuid",
   "type": "SMS",
   "occurredAt": "2026-07-27T12:00:00Z",
@@ -131,6 +131,9 @@ Android가 API에 보내는 수집 envelope은 다음 형식을 사용합니다.
 | 사칭·공포·긴급성 표현이 확인됨 | `CAUTION` |
 | 송금·결제 요구 + 기관·가족 사칭 | `CRITICAL` |
 | 앱 설치 요구 + 원격 제어 또는 비밀 유지 요구 | `CRITICAL` |
+| 링크를 열었다고 사용자가 확인 | `CAUTION`, 사건 단계 최소 `S1` |
+| 개인정보·인증정보를 입력했다고 사용자가 확인 | `HIGH`, 사건 단계 최소 `S2` |
+| 앱을 설치했다고 사용자가 확인 | `CRITICAL`, 사건 단계 최소 `S3` |
 | 송금 완료를 사용자가 확인 | `CRITICAL`, 사건 단계 `S4` |
 
 강제 규칙이 여러 개면 가장 높은 결과를 사용합니다. Android 로컬 강제 규칙이 만든 수준은 서버가 자동으로 낮추지 않습니다.
@@ -230,11 +233,17 @@ Notification Policy는 전송 직전에 연결·동의를 다시 확인합니다
 
 LLM은 `level`, `score`, `signals`, 알림 여부를 변경할 수 없습니다. timeout·형식 오류·근거 추가가 발생하면 템플릿만 사용합니다.
 
+구현된 설명 adapter의 입력은 `level`, `category`, signal의 `type/evidence`,
+`recommendedActionIds`, `incidentStage`뿐입니다. 문자 원문·전화번호·URL은 입력 schema에
+없습니다. OpenAI provider를 선택하면 Responses API의 `store=false`, 1.5초 timeout, strict
+JSON schema를 사용하며 제목 80자·설명 300자·사건 요약 400자 제한과 URL·장문 숫자·근거
+없는 피해 확정 표현을 검사합니다. 결과에는 `TEMPLATE | OPENAI` 출처를 저장합니다.
+
 ## 11. 정책 bundle
 
 ```json
 {
-  "version": "2026-07-27.1",
+  "version": "2026-07-28.1",
   "schemaVersion": 1,
   "issuedAt": "2026-07-27T00:00:00Z",
   "expiresAt": "2026-08-27T00:00:00Z",

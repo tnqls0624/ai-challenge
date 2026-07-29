@@ -1,6 +1,6 @@
 # 돈워리 배포·운영 런북
 
-> 상태: 공급자 선정 전 골격
+> 상태: Render 구성·로컬 복구 검증 완료, 실배포 대기
 >
 > 운영 필수 기간: 2026-09-07 11:00 KST ~ 2026-09-11 23:59 KST
 >
@@ -20,14 +20,16 @@ production DB를 local에 복제하지 않습니다.
 
 | 항목 | 값 |
 |---|---|
-| Web provider/project | `TO_BE_FILLED` |
-| API provider/service | `TO_BE_FILLED` |
-| PostgreSQL provider/instance | `TO_BE_FILLED` |
-| Region | `TO_BE_FILLED` |
+| Web provider/project | Render / `dont-worry-ai-challenge-web` |
+| API provider/service | Render / `dont-worry-ai-challenge-api` |
+| PostgreSQL provider/instance | Render / `dont-worry-ai-challenge-db`, Basic 256 MB |
+| Region | Singapore |
 | Production URL | `TO_BE_FILLED` |
 | API URL | `TO_BE_FILLED` |
-| Status page/console | `TO_BE_FILLED` |
-| Backup policy | `TO_BE_FILLED` |
+| Status page/console | Render Dashboard, resource ID는 배포 후 기록 |
+| Backup policy | paid DB PITR: Hobby 3일, 논리 backup export: 생성 후 7일 |
+
+실행 절차와 최초 입력값은 [Render 배포 가이드](deployment-render.md)를 따릅니다.
 
 ## 3. 필수 설정
 
@@ -38,16 +40,25 @@ DATABASE_URL
 FIREBASE_PROJECT_ID
 FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
-SAFE_BROWSING_API_KEY
 LLM_PROVIDER
-LLM_API_KEY
-SENTRY_DSN
+OPENAI_API_KEY
+OPENAI_EXPLANATION_MODEL
+LLM_DEVICE_MINUTE_LIMIT
+LLM_GLOBAL_DAILY_LIMIT
+ACTIVATION_CODE_PEPPER
+DEVICE_CREDENTIAL_SECRET
+PUSH_TOKEN_ENCRYPTION_KEY
+WEB_ORIGIN
 WORKER_ENABLED
-APP_VERSION
-RISK_POLICY_VERSION
 ```
 
-`LLM_API_KEY`는 template-only 모드에서는 필수가 아닙니다.
+`LLM_PROVIDER=template`이 기본값이며 이 모드에서는 OpenAI 설정이 필요하지 않습니다.
+`LLM_PROVIDER=openai`일 때만 `OPENAI_API_KEY`와 `OPENAI_EXPLANATION_MODEL`이 모두
+필수입니다.
+
+Sentry는 선택 설정입니다. API·Web server는 `SENTRY_DSN`, Web browser는
+`NEXT_PUBLIC_SENTRY_DSN`을 사용합니다. DSN을 넣기 전에는 비활성이며, staging
+scrubbing 검증 전 production에 켜지 않습니다.
 
 ## 4. 배포 순서
 
@@ -65,8 +76,6 @@ release commit
   → release artifact 기록
 ```
 
-명령의 최종 형태는 provider 선정 후 채웁니다.
-
 ```text
 pnpm install --frozen-lockfile
 pnpm lint
@@ -75,8 +84,12 @@ pnpm test
 pnpm test:integration
 pnpm build
 pnpm db:migrate:deploy
-pnpm test:smoke
+pnpm docker:build:api
+pnpm docker:build:web
 ```
+
+Render는 CI가 통과한 main commit만 자동 배포합니다. API image의 pre-deploy command가
+`prisma migrate deploy`를 실행하고 실패 시 새 release를 중단합니다.
 
 ## 5. Migration
 
@@ -169,18 +182,17 @@ Rollback 후 version·migration·policy 조합을 기록합니다.
 
 ## 11. Backup·복구 훈련
 
-공급자 선정 후 작성:
-
 | 항목 | 값 |
 |---|---|
-| 자동 backup 주기 | `TO_BE_FILLED` |
-| PITR 지원 | `TO_BE_FILLED` |
-| RPO 목표 | 대회 MVP: `TO_BE_FILLED` |
-| RTO 목표 | 대회 MVP: `TO_BE_FILLED` |
-| 마지막 restore drill | `NOT_RUN` |
-| backup 소거 기한 | `TO_BE_FILLED` |
+| 자동 backup 주기 | Render paid DB 연속 backup, release 전 논리 export 수동 생성 |
+| PITR 지원 | Hobby workspace 최근 3일 |
+| RPO 목표 | 대회 MVP 1시간, staging에서 실측 |
+| RTO 목표 | 대회 MVP 2시간, staging에서 실측 |
+| 마지막 restore drill | 2026-07-28 local PostgreSQL: 18 tables·6 migrations·11 core rows 일치 |
+| backup 소거 기한 | PITR 3일·논리 export 7일, production 삭제 drill 후 최종 확정 |
 
-복구 훈련은 합성 staging 데이터로 수행합니다.
+로컬 drill은 `pnpm db:restore:verify`로 수행하며 dump SHA-256을 실행 로그에 남깁니다.
+production 조건은 합성 staging 데이터로 한 번 더 검증합니다.
 
 ## 12. 운영 교대
 

@@ -1,7 +1,5 @@
 package com.dontworry.spike
 
-import java.security.MessageDigest
-
 enum class ContentAvailability {
     FULL,
     PARTIAL,
@@ -92,10 +90,4 @@ object StableEventKey {
     fun create(packageName: String, notificationId: Int, tag: String?): String {
         return "$packageName:$notificationId:${tag.orEmpty()}"
     }
-}
-
-fun sha256(value: String): String {
-    return MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8))
-        .joinToString("") { "%02x".format(it) }
 }
