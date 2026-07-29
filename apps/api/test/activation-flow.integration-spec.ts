@@ -353,17 +353,19 @@ describe('guardian-to-device activation flow', () => {
       .send({ status: 'IN_PROGRESS', version: 1 })
       .expect(409);
 
-    const firstActionId = incidentBeforeDelivery.actionItems[0]?.id;
-    expect(firstActionId).toBeDefined();
+    const stopContactActionId = incidentBeforeDelivery.actionItems.find(
+      (item) => item.actionId === 'STOP_CONTACT',
+    )?.id;
+    expect(stopContactActionId).toBeDefined();
     const actionResponse = await request(app.getHttpServer())
-      .patch(`/v1/action-items/${firstActionId as string}`)
+      .patch(`/v1/action-items/${stopContactActionId as string}`)
       .set('Authorization', `Bearer ${guardianToken}`)
       .send({ completed: true })
       .expect(200);
     expect(actionResponse.body.actionItems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: firstActionId,
+          id: stopContactActionId,
           status: 'COMPLETED',
         }),
       ]),
