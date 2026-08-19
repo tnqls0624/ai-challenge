@@ -15,9 +15,9 @@
   "dependencies": {
     "@dont-worry/contracts": "workspace:*",
     "@dont-worry/risk-engine": "workspace:*",
-    "@sentry/nextjs": "10.66.0",
-    "firebase": "12.16.0",
-    "next": "16.2.12",
+    "@sentry/nextjs": "10.70.0",
+    "firebase": "12.17.1",
+    "next": "16.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
